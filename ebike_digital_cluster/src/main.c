@@ -9,6 +9,7 @@
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/can.h>
 #include <zephyr/drivers/display.h>
+#include <zephyr/drivers/i2c.h>
 #include <zephyr/sys/util.h>
 #include <zephyr/sys/printk.h>
 #include <zephyr/logging/log.h>
@@ -46,6 +47,21 @@ void button_pressed(const struct device *dev, struct gpio_callback *cb,
 	printk("Button pressed at %" PRIu32 "\n", k_cycle_get_32());
 	k_thread_resume(edc_ctrl.thread_id);
 	//EDC_DataModelPublish(&edc_model);
+}
+
+void board_enable_backlight(void)
+{
+	const uint8_t cmd_data[] = {0x0d, 0xbf};
+	const uint8_t io_exp_addr = 0x22;
+	const struct device *i2c_dev = DEVICE_DT_GET(DT_N_S_soc_S_i2c_44350000);
+
+	if(!device_is_ready(i2c_dev))
+	{
+		LOG_ERR("I2C: Device not ready.");
+	}
+
+	i2c_write(i2c_dev, cmd_data, 2, io_exp_addr);
+
 }
 
 int main(void)
@@ -109,7 +125,8 @@ int main(void)
    	events_init(&guider_ui);
 
 	lv_task_handler();
-	display_blanking_off(display_dev);
+	//display_blanking_off(display_dev);
+	board_enable_backlight();
 
 	LOG_INF("main ok");
 
