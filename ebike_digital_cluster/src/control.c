@@ -140,7 +140,9 @@ void EDC_CtrlTask(edc_ctrl_t *const ctrl, edc_dataModel_t *const model, void*)
     LOG_INF("edc ctrl can ok\n");
 
     extern k_tid_t edc_viewShell_task;
+    extern k_tid_t edc_viewDisplay_task;
     k_thread_resume(edc_viewShell_task);
+    k_thread_resume(edc_viewDisplay_task);
 
     LOG_INF("edc view start ok\n");
 
