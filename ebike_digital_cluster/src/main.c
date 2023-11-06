@@ -8,11 +8,18 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/can.h>
+#include <zephyr/drivers/display.h>
 #include <zephyr/sys/util.h>
 #include <zephyr/sys/printk.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/shell/shell.h>
 #include <inttypes.h>
+#include <stdio.h>
+#include <string.h>
+#include <lvgl.h>
+
+#include "../generated/gui_guider.h"
+#include "../generated/events_init.h"
 
 #include "control.h"
 
@@ -30,6 +37,7 @@ static struct gpio_dt_spec led = GPIO_DT_SPEC_GET_OR(DT_ALIAS(led0), gpios,
 						     {0});
 
 k_tid_t tid_main;
+lv_ui guider_ui;
 
 void button_pressed(const struct device *dev, struct gpio_callback *cb,
 		    uint32_t pins)
@@ -89,6 +97,20 @@ int main(void)
 		}
 	}
 
+	const struct device *display_dev;
+
+	display_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_display));
+	if (!device_is_ready(display_dev)) {
+		LOG_ERR("Device not ready, aborting test");
+		return;
+	}
+
+	setup_ui(&guider_ui);
+   	events_init(&guider_ui);
+
+	lv_task_handler();
+	display_blanking_off(display_dev);
+
 	LOG_INF("main ok");
 
 	extern edc_ctrl_t edc_ctrl;
@@ -96,7 +118,8 @@ int main(void)
 
 	while (true)
 	{
-		k_thread_suspend(tid_main);
+		lv_task_handler();
+		k_sleep(K_MSEC(10));
 	}
 
 	return 0;

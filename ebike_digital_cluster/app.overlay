@@ -7,6 +7,7 @@
         zephyr,code-partition = &sram0;
         zephyr,sram = &sram1;
         zephyr,canbus = &flexcan2;
+        zephyr,display = &lcdif;
     };
 
     sram0: memory@80200000 {
@@ -19,6 +20,15 @@
 
 };
 
+&media_blk_ctrl{
+	status = "okay";
+};
+
+&lcdif {
+	pixel-format = "rgb-888";
+	status = "okay";
+};
+
 &gpiohog_exp_sel {
     output-low;
 };
@@ -29,5 +39,13 @@
 
 &flexcan2 {
 	bus-speed = <1000000>;
+    status = "okay";
+};
+
+&ldb {
+    status = "okay";
+};
+
+&lvds_panel {
     status = "okay";
 };
