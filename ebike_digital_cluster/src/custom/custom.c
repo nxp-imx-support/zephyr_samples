@@ -107,7 +107,7 @@ void EDC_ViewDisplayUpdate(edc_dataModelSub_t *const dm_sub)
                 , UINT_INTEGER_BASE_1000(model->data.currentSpeed)
                 , UINT_FRAC_BASE_1000_D1(model->data.currentSpeed));
         lv_meter_set_indicator_value(guider_ui.screen_meter, guider_ui.screen_meter_scale_1_ndimg_0
-                , model->data.currentSpeed / 1000);
+                , model->data.currentSpeed / 100);
         /** update distance */
         lv_label_set_text_fmt(guider_ui.screen_distance_value, "%3d.%1.1d"
                 , UINT_INTEGER_BASE_1000(model->data.distance)
