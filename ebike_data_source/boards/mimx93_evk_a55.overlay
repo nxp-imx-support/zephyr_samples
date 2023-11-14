@@ -35,6 +35,10 @@
     output-low;
 };
 
+&lpuart2 {
+    current-speed = <1500000>;
+};
+
 &flexcan2_phy {
     status = "okay";
 };

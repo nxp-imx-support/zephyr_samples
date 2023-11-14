@@ -141,6 +141,19 @@ int EDS_CommSendSequence(eds_comm_t *const comm, eds_commSeq_t const * seq)
     return -EINVAL; // should never reach here
 }
 
+#ifdef EDS_COMM_WFM_OUT
+void EDS_CommSendUartStr(eds_comm_t *const comm, char *str)
+{
+	int msg_len = strlen(str);
+
+	for (int i = 0; i < msg_len; i++) {
+		uart_poll_out(comm->uart_dev, str[i]);
+	}
+
+	//printk("Device %s sent: \"%s\"\n", uart->name, str);
+}
+#endif // EDS_COMM_WFM_OUT
+
 void EDS_CommKineticsModelUpdate(eds_comm_t *const comm)
 {
     /** calculate PI controller */
@@ -165,6 +178,25 @@ void EDS_CommKineticsModelUpdate(eds_comm_t *const comm)
         comm->kinetics.accel_ctrl_err = 0;
         comm->kinetics.accel_ctrl_err_intg = 0;
     }
+
+#ifdef EDS_COMM_WFM_OUT
+    static char str_buf[256];
+
+    snprintf(str_buf, 256,
+        "target_accel=%d,"
+        "real_accel=%d,"
+        "accel_err=%d,"
+        "real_deccel=%d,"
+        "curr_speed=%d,"
+        "\r\n"
+        , comm->state.target_accel
+        , real_accel
+        , comm->kinetics.accel_ctrl_err
+        , real_deccel
+        , comm->state.curr_speed
+    );
+    EDS_CommSendUartStr(comm, str_buf);
+#endif // EDS_COMM_WFM_OUT
 }
 
 void EDS_CommKeyInput(eds_comm_t *const comm, uint16_t keycode)
@@ -242,6 +274,14 @@ void EDS_CommTask(eds_comm_t *const comm, void* p2, void* p3)
 	frame.flags = 0U;
 #endif // CONFIG_CAN_FD_MODE
 
+#ifdef EDS_COMM_WFM_OUT
+    comm->uart_dev = DEVICE_DT_GET(DT_NODELABEL(EDS_COMM_WFM_OUT_DEVICE));
+    if(!device_is_ready(comm->uart_dev))
+    {
+        LOG_ERR("uart device not ready [%d]\n", -ENODEV);
+        return;
+    }
+#endif // EDS_COMM_WFM_OUT
 
     LOG_INF("eds comm can ok\n");
 

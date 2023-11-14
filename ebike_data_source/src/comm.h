@@ -14,8 +14,16 @@
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/can.h>
 #include <zephyr/drivers/gpio.h>
+#include <zephyr/drivers/uart.h>
 
 #include "model.h"
+
+#define EDS_COMM_THREAD_PRIO (5)
+#define EDS_COMM_THREAD_START_PRIO (-1)
+#define EDS_COMM_THREAD_STACK_SIZE (0x4000U)
+
+#define EDS_COMM_WFM_OUT (1)
+#define EDS_COMM_WFM_OUT_DEVICE lpuart2
 
 typedef enum _eds_comm_msg
 {
