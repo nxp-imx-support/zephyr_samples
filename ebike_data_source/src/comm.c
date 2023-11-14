@@ -12,6 +12,16 @@ struct can_filter const eds_comm_canRxFilter[] =
     },
 };
 
+const char* eds_comm_drive_mode_name[] =
+{
+    "eds_driveMode_off",
+    "eds_driveMode_lock",
+    "eds_driveMode_eco",
+    "eds_driveMode_normal",
+    "eds_driveMode_sport",
+    "eds_driveMode_rain",
+};
+
 void EDS_CommCanBusRxCb(struct device const *const dev, struct can_frame *frame, void *userData)
 {
 
@@ -48,7 +58,7 @@ int32_t EDS_CommCanBusConfig(eds_comm_t * const comm)
     comm->can_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_canbus));
     if(!device_is_ready(comm->can_dev))
     {
-        LOG_DBG("can device not ready [%d]\n", -ENODEV);
+        LOG_ERR("can device not ready [%d]\n", -ENODEV);
         return -ENODEV;
     }
 
@@ -57,14 +67,13 @@ int32_t EDS_CommCanBusConfig(eds_comm_t * const comm)
     ret = can_calc_timing(comm->can_dev, &timing, 1000000, 875);
     ret = can_set_timing(comm->can_dev, &timing);
 #ifdef CONFIG_CAN_FD_MODE
-    ret = can_calc_timing_data(comm->can_dev, &timing, 8000000, 875);
+    ret = can_calc_timing_data(comm->can_dev, &timing, 2000000, 875);
     ret = can_set_timing_data(comm->can_dev, &timing);
 #endif // CONFIG_CAN_FD_MODE
     ret = can_start(comm->can_dev);
     if (ret != 0)
     {
-        LOG_DBG("set can timing fail [%d]\n", ret);
-        return ret;
+        LOG_ERR("set can timing fail [%d]\n", ret);
     }
 
     uint32_t const filter_count = sizeof(eds_comm_canRxFilter) / sizeof(struct can_filter);
@@ -73,7 +82,7 @@ int32_t EDS_CommCanBusConfig(eds_comm_t * const comm)
         ret = can_add_rx_filter(comm->can_dev, EDS_CommCanBusRxCb, comm, &eds_comm_canRxFilter[i]);
         if(comm->can_filterId < 0)
         {
-            LOG_DBG("add can filter fail [%d]\n", ret);
+            LOG_ERR("add can filter fail [%d]\n", ret);
             return ret;
         }
         comm->can_filterId[i] = ret;
@@ -111,7 +120,7 @@ int EDS_CommSendSequence(eds_comm_t *const comm, eds_commSeq_t const * seq)
             ret = EDS_CommCanBusSend(comm, &frame);
             if (ret)
             {
-                LOG_ERR("send fail at seq % [%d]", len, ret);
+                LOG_ERR("send fail at seq %d [%d]", len, ret);
             }
             break;
         default:
@@ -121,7 +130,7 @@ int EDS_CommSendSequence(eds_comm_t *const comm, eds_commSeq_t const * seq)
             ret = EDS_CommCanBusSend(comm, &frame);
             if (ret)
             {
-                LOG_ERR("send fail at seq % [%d]", len, ret);
+                LOG_ERR("send fail at seq %d [%d]", len, ret);
             }
             break;
         }
@@ -132,36 +141,146 @@ int EDS_CommSendSequence(eds_comm_t *const comm, eds_commSeq_t const * seq)
     return -EINVAL; // should never reach here
 }
 
+void EDS_CommKineticsModelUpdate(eds_comm_t *const comm)
+{
+    /** calculate PI controller */
+    comm->kinetics.accel_ctrl_err = (comm->state.target_accel - comm->state.nominal_accel);
+    comm->kinetics.accel_ctrl_err_intg += comm->kinetics.accel_ctrl_err;
+    double nominal_accel_control = comm->kinetics.accel_ctrl_err * comm->kinetics.accel_ctrl_kp
+                     + comm->kinetics.accel_ctrl_err_intg * comm->kinetics.accel_ctrl_ki;
+    comm->state.nominal_accel += nominal_accel_control;
+
+    /** calculate real accel, consider swing */
+    int32_t real_accel = comm->state.nominal_accel; //TODO use rand() to randomize this
+
+    /** calculate drag deccel */
+    int32_t real_deccel = comm->state.curr_speed * comm->kinetics.deccel_coeff
+                         + comm->state.curr_speed * comm->state.curr_speed * comm->kinetics.deccel_coeff_2;
+
+    /** calculate curr_speed */
+    comm->state.curr_speed = comm->state.curr_speed + real_accel - real_deccel;
+    if (comm->state.curr_speed < 0)
+    {
+        comm->state.curr_speed = 0;
+        comm->kinetics.accel_ctrl_err = 0;
+        comm->kinetics.accel_ctrl_err_intg = 0;
+    }
+}
+
+void EDS_CommKeyInput(eds_comm_t *const comm, uint16_t keycode)
+{
+    k_mutex_lock(&comm->lock, K_FOREVER);
+
+    if (keycode & eds_comm_keyCode_MP && !(keycode & eds_comm_keyCode_MN)
+        && comm->state.drive_mode < eds_driveMode_rain)
+    {
+        comm->state.drive_mode ++;
+        LOG_DBG("drive mode +, curr %s", eds_comm_drive_mode_name[comm->state.drive_mode]);
+    }
+    if (keycode & eds_comm_keyCode_MN && !(keycode & eds_comm_keyCode_MP)
+        && comm->state.drive_mode > eds_driveMode_off)
+    {
+        comm->state.drive_mode --;
+        if(comm->state.drive_mode == eds_driveMode_off)
+        {
+            comm->state.target_accel = 0;
+        }
+        LOG_DBG("drive mode -, curr %s", eds_comm_drive_mode_name[comm->state.drive_mode]);
+    }
+
+
+    if (keycode & eds_comm_keyCode_SP && !(keycode & eds_comm_keyCode_SN)
+        && comm->state.drive_mode != eds_driveMode_off
+        && comm->state.target_accel < 20000)
+    {
+        comm->state.target_accel += 250;
+        LOG_DBG("speed +250, curr %d", comm->state.target_accel);
+    }
+    if (keycode & eds_comm_keyCode_SN && !(keycode & eds_comm_keyCode_SP)
+        && comm->state.drive_mode != eds_driveMode_off
+        && comm->state.target_accel != 0)
+    {
+        comm->state.target_accel -= 250;
+        LOG_DBG("speed -250, curr %d", comm->state.target_accel);
+    }
+
+    k_mutex_unlock(&comm->lock);
+}
+
 void EDS_CommTask(eds_comm_t *const comm, void* p2, void* p3)
 {
     int32_t ret;
+    int64_t uptime;
+    struct can_frame frame;
 
     LOG_INF("eds comm task\n");
     comm->thread_id = k_current_get();
+
+    k_mutex_init(&comm->lock);
+
+    comm->state.drive_mode = eds_driveMode_off;
+    comm->state.target_accel = 0;
+    comm->state.nominal_accel = 0;
+    comm->state.curr_speed = 0;
+
+    comm->kinetics.deccel_coeff = 0.00175;
+    comm->kinetics.deccel_coeff_2 = 0.00001;
+    comm->kinetics.accel_swing_permillage = 50;
+    comm->kinetics.accel_ctrl_kp = 0.1;
+    comm->kinetics.accel_ctrl_ki = 0.002;
+    comm->kinetics.accel_ctrl_err = 0;
+    comm->kinetics.accel_ctrl_err_intg = 0;
 
     ret = EDS_CommCanBusConfig(comm);
     if(ret != 0)
     {
         return;
     }
+#ifdef CONFIG_CAN_FD_MODE
+	frame.flags = CAN_FRAME_FDF | CAN_FRAME_BRS;
+#else
+	frame.flags = 0U;
+#endif // CONFIG_CAN_FD_MODE
+
 
     LOG_INF("eds comm can ok\n");
 
+    /** return to normal priority */
+    k_thread_priority_set(k_current_get(), EDS_COMM_THREAD_PRIO);
+
     while (true)
     {
-        extern eds_commSeq_t const seq_anim1[];
-        k_thread_suspend(comm->thread_id);
-        EDS_CommSendSequence(comm, &seq_anim1);
+        //extern eds_commSeq_t const seq_anim1[];
+        //k_thread_suspend(comm->thread_id);
+        //EDS_CommSendSequence(comm, &seq_anim1);
+        uptime = k_uptime_get();
+
+        k_mutex_lock(&comm->lock, K_FOREVER);
+
+        /** send can frame to set drive_mode */
+        frame.id = eds_comm_msg_driveMode;
+        frame.data_32[0] = comm->state.drive_mode;
+        frame.dlc = 4U;
+        ret = EDS_CommCanBusSend(comm, &frame);
+
+        /** send can frame to set curr_speed */
+        EDS_CommKineticsModelUpdate(comm);
+        frame.id = eds_comm_msg_currSpeed;
+        frame.data_32[0] = comm->state.curr_speed;
+        frame.dlc = 4U;
+        ret = EDS_CommCanBusSend(comm, &frame);
+
+        k_mutex_unlock(&comm->lock);
+
+        // let's wait exactly 100 ms
+        int64_t sleep_time = uptime - k_uptime_get() + 125;
+        if(sleep_time > 0) {
+            k_sleep(K_MSEC(sleep_time));
+        }
+
     }
 
 }
-
-eds_comm_t eds_comm;
-#define EDS_COMM_THREAD_PRIO (5U)
-#define EDS_COMM_THREAD_STACK_SIZE (0x4000U)
-K_THREAD_DEFINE(eds_control_task, EDS_COMM_THREAD_STACK_SIZE,
-                EDS_CommTask, &eds_comm, NULL, NULL,
-                EDS_COMM_THREAD_PRIO, 0, 0);
 
 
 eds_commSeq_t const seq_anim1[] =

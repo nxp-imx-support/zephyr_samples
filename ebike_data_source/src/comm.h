@@ -27,13 +27,6 @@ typedef enum _eds_comm_msg
     eds_comm_msg_currSpeed = 0x102,
 } eds_comm_msg_t;
 
-typedef struct _eds_comm
-{
-    k_tid_t thread_id;
-    struct device *can_dev;
-    uint32_t can_filterId[8];
-} eds_comm_t;
-
 typedef enum _eds_driveMode
 {
     eds_driveMode_off = 0U,
@@ -68,11 +61,39 @@ typedef enum _eds_lightMode
               |  ((eds_lightMode_rear_##rearLight) << 7) \
     )
 
+typedef struct _eds_comm
+{
+    k_tid_t thread_id;
+    struct device const *can_dev;
+    uint32_t can_filterId[8];
+    struct k_mutex lock;
+#ifdef EDS_COMM_WFM_OUT
+    struct device const *uart_dev;
+#endif // ! EDS_COMM_WFM_OUT
+
+    struct
+    {
+        eds_driveMode_t drive_mode;
+        int32_t target_accel; /** accel +/- button set nominal_accel, and then apply random swing on it */
+        int32_t nominal_accel;
+        int32_t curr_speed;
+    }state;
+
+    struct
+    {
+        double deccel_coeff, deccel_coeff_2;
+        int32_t accel_swing_permillage; /** maximum permillage average_accel can randomly swing */
+        double accel_ctrl_kp, accel_ctrl_ki;
+        int32_t accel_ctrl_err, accel_ctrl_err_intg;
+    }kinetics;
+} eds_comm_t;
+
 typedef struct _eds_commSeq
 {
     eds_comm_msg_t msg;
     uint32_t data[2];
 }eds_commSeq_t;
+
 
 #define EDS_COMM_SEQ_SLEEP(time_ms) \
 { \
@@ -91,6 +112,33 @@ typedef struct _eds_commSeq
     .msg = eds_comm_msg_##comm_msg, \
     .data = {data0, data1}, \
 }
+
+/**
+ * @brief Key code on 4x4 key pad
+ *
+ * eds_comm_keyCode_MP : mode +
+ * eds_comm_keyCode_MN : mode -
+ *
+ * eds_comm_keyCode_SP : speed +
+ * eds_comm_keyCode_SN : speed -
+ *
+ * eds_comm_keyCode_FL : front light
+ * eds_comm_keyCode_RL : rear light
+ * eds_comm_keyCode_LT : left trun
+ * eds_comm_keyCode_RT : right turn
+ *
+ */
+typedef enum _eds_commKeyCode
+{
+    eds_comm_keyCode_MP = BIT(0), eds_comm_keyCode_FL = BIT(1), eds_comm_keyCode_SP  = BIT(2), eds_comm_keyCode_3 = BIT(3),
+    eds_comm_keyCode_4 = BIT(4), eds_comm_keyCode_LT = BIT(5), eds_comm_keyCode_6 = BIT(6), eds_comm_keyCode_RT = BIT(7),
+    eds_comm_keyCode_MN = BIT(8), eds_comm_keyCode_RL = BIT(9), eds_comm_keyCode_SN = BIT(10), eds_comm_keyCode_b = BIT(11),
+    eds_comm_keyCode_KP_N = BIT(12), eds_comm_keyCode_KP_P = BIT(13), eds_comm_keyCode_KI_N = BIT(14), eds_comm_keyCode_KI_P = BIT(15),
+}eds_commKeyCode_t;
+
+void EDS_CommKeyInput(eds_comm_t *const comm, uint16_t keycode);
+
+void EDS_CommTask(eds_comm_t *const comm, void* p2, void* p3);
 
 
 #endif //! __EDS_COMM_H__
