@@ -98,6 +98,14 @@ void keypad_4x4_scan(keypad_4x4_t *kp)
 	keypad_4x4_select_row(kp, 0b1111);
 }
 
+#define KEYPAD_FOREACH_KEY(keys_u16, state_b, op) \
+	for (int keys_u16##_i = 0; keys_u16##_i < 16; ++keys_u16##_i) { \
+		if ((keys_u16 >> keys_u16##_i) & 0x1 == state_b) { \
+			op; \
+		} \
+	}
+
+
 k_tid_t tid_main;
 
 keypad_4x4_t keypad =
@@ -140,11 +148,25 @@ int main(void)
 
 	while (true)
 	{
+		uint8_t key_hold_timer[16];
 		uptime = k_uptime_get();
 		keypad_4x4_scan(&keypad);
 
+		uint16_t key_pressed = (keypad.data ^ keypad.shadow) & keypad.data;
+		KEYPAD_FOREACH_KEY(key_pressed, 1, {key_hold_timer[key_pressed_i] = 0U; })
+
 		uint16_t key_released = (keypad.data ^ keypad.shadow) & keypad.shadow;
-		extern eds_comm_t eds_comm;
+
+		uint16_t key_hold = keypad.data & keypad.shadow;
+		KEYPAD_FOREACH_KEY(key_hold, 1, {
+			key_hold_timer[key_hold_i] ++;
+			if (key_hold_timer[key_hold_i] > 49)
+			{
+				key_released |= BIT(key_hold_i);
+				key_hold_timer[key_hold_i] = 0U;
+			}
+		})
+
 		EDS_CommKeyInput(&eds_comm, key_released);
 
 		// let's wait exactly 25 ms
