@@ -7,7 +7,6 @@
         zephyr,code-partition = &sram0;
         zephyr,sram = &sram1;
         zephyr,canbus = &flexcan2;
-        zephyr,display = &lcdif;
     };
 
     sram0: memory@80200000 {
@@ -16,6 +15,18 @@
 
     sram1: memory@81200000 {
         reg = <0x81200000 DT_SIZE_M(1792)>;
+    };
+
+    zephyr,user {
+        //keypad_gpio_irq = <&gpio2 >
+        keypad_r_gpios = <&gpio2  5 GPIO_ACTIVE_HIGH>,
+                        <&gpio2  0 GPIO_ACTIVE_HIGH>,
+                        <&gpio2  3 GPIO_ACTIVE_HIGH>,
+                        <&gpio2  2 GPIO_ACTIVE_HIGH>;
+        keypad_c_gpios = <&gpio2 14 GPIO_ACTIVE_HIGH>,
+                        <&gpio2 15 GPIO_ACTIVE_HIGH>,
+                        <&gpio2  7 GPIO_ACTIVE_HIGH>,
+                        <&gpio2  1 GPIO_ACTIVE_HIGH>;
     };
 
 };
