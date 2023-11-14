@@ -1,0 +1,33 @@
+/delete-node/ &sram0;
+
+/{
+    chosen{
+        zephyr,console = &lpuart1;
+        zephyr,shell-uart = &lpuart1;
+        zephyr,code-partition = &sram0;
+        zephyr,sram = &sram1;
+        zephyr,canbus = &flexcan2;
+    };
+
+    sram0: memory@80200000 {
+        reg = <0x80200000 DT_SIZE_M(16)>;
+    };
+
+    sram1: memory@81200000 {
+        reg = <0x81200000 DT_SIZE_M(1792)>;
+    };
+
+};
+
+&gpiohog_exp_sel {
+    output-low;
+};
+
+&flexcan2_phy {
+    status = "okay";
+};
+
+&flexcan2 {
+	bus-speed = <1000000>;
+    status = "okay";
+};
