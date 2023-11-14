@@ -17,6 +17,10 @@
 
 #include "model.h"
 
+#define EDC_CTRL_THREAD_START_PRIO (-1)
+#define EDC_CTRL_THREAD_PRIO (5)
+#define EDC_CTRL_THREAD_STACK_SIZE (0x4000U)
+
 typedef enum _edc_ctrl_canMsg
 {
     edc_ctrl_canMsg_timeSync = 0x100,
@@ -33,5 +37,8 @@ typedef struct _edc_ctrl
     struct k_work pub_work; //TODO:clean-up work object if not used anymore
 } edc_ctrl_t;
 
+int32_t EDC_CtrlCanBusConfig(edc_ctrl_t * const ctrl);
+
+void EDC_CtrlTask(edc_ctrl_t *const ctrl, edc_dataModel_t *const model, void*);
 
 #endif //! __EDC_CONTROL_H__

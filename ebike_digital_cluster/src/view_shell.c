@@ -171,40 +171,40 @@ SHELL_STATIC_SUBCMD_SET_CREATE(edc_shell_cmds,
 );
 SHELL_CMD_REGISTER(edc, &edc_shell_cmds, "Ebike digital culster commands", NULL);
 
-void EDC_ViewShellTask(edc_ctrl_t * const ctrl, void*, void*)
-{
-    int32_t ret;
-    edc_dataModelSub_t dm_sub;
-    dm_sub.dataModel = NULL;
-
-    k_thread_suspend(k_current_get());
-
-    LOG_INF("subscribe model\n");
-    ret = EDC_DataModelSubscribe(&dm_sub, ctrl->model);
-    if (ret != 0U)
-    {
-        LOG_INF("subscribe fail %d\n", ret);
-        return;
-    }
-    LOG_INF("subscribe ok\n");
-
-    while (true)
-    {
-        EDC_DataModelEventWait(&dm_sub, K_FOREVER);
-        LOG_INF("edc data:\n");
-        LOG_INF("Drive mode: %s\n", cmd_stringLut_driveMode[dm_sub.dataModel->data.modeData.driveMode]);
-        LOG_INF("Light: Main %s, Rear %s, Turn %s\n",
-                cmd_stringLut_mainLight[dm_sub.dataModel->data.modeData.mainLight],
-                cmd_stringLut_rearLight[dm_sub.dataModel->data.modeData.turnLight],
-                cmd_stringLut_turnLight[dm_sub.dataModel->data.modeData.rearLight]);
-        LOG_INF("Speed: %d.%d km/h\n", dm_sub.dataModel->data.currentSpeed / 1000, dm_sub.dataModel->data.currentSpeed % 1000);
-        LOG_INF("Average speed: %d.%d km/h\n", model->data.averageSpeed / 1000, model->data.averageSpeed % 1000);
-	    LOG_INF("Distance: %d.%d km\n", dm_sub.dataModel->data.distance / 1000, dm_sub.dataModel->data.distance % 1000);
-    }
-}
-
-#define EDC_VIEWSHELL_THREAD_PRIO (8U)
-#define EDC_VIEWSHELL_THREAD_STACK_SIZE (0x1000U)
-K_THREAD_DEFINE(edc_viewShell_task, EDC_VIEWSHELL_THREAD_STACK_SIZE,
-                EDC_ViewShellTask, &edc_ctrl, NULL, NULL,
-                EDC_VIEWSHELL_THREAD_PRIO, 0, 0);
+//void EDC_ViewShellTask(edc_ctrl_t * const ctrl, void*, void*)
+//{
+//    int32_t ret;
+//    edc_dataModelSub_t dm_sub;
+//    dm_sub.dataModel = NULL;
+//
+//    k_thread_suspend(k_current_get());
+//
+//    LOG_INF("subscribe model\n");
+//    ret = EDC_DataModelSubscribe(&dm_sub, ctrl->model);
+//    if (ret != 0U)
+//    {
+//        LOG_INF("subscribe fail %d\n", ret);
+//        return;
+//    }
+//    LOG_INF("subscribe ok\n");
+//
+//    while (true)
+//    {
+//        EDC_DataModelEventWait(&dm_sub, K_FOREVER);
+//        LOG_DBG("edc data:\n");
+//        LOG_DBG("Drive mode: %s\n", cmd_stringLut_driveMode[dm_sub.dataModel->data.modeData.driveMode]);
+//        LOG_DBG("Light: Main %s, Rear %s, Turn %s\n",
+//                cmd_stringLut_mainLight[dm_sub.dataModel->data.modeData.mainLight],
+//                cmd_stringLut_rearLight[dm_sub.dataModel->data.modeData.turnLight],
+//                cmd_stringLut_turnLight[dm_sub.dataModel->data.modeData.rearLight]);
+//        LOG_DBG("Speed: %d.%d km/h\n", dm_sub.dataModel->data.currentSpeed / 1000, dm_sub.dataModel->data.currentSpeed % 1000);
+//        LOG_DBG("Average speed: %d.%d km/h\n", model->data.averageSpeed / 1000, model->data.averageSpeed % 1000);
+//	    LOG_DBG("Distance: %d.%d km\n", dm_sub.dataModel->data.distance / 1000, dm_sub.dataModel->data.distance % 1000);
+//    }
+//}
+//
+//#define EDC_VIEWSHELL_THREAD_PRIO (8U)
+//#define EDC_VIEWSHELL_THREAD_STACK_SIZE (0x1000U)
+//K_THREAD_DEFINE(edc_viewShell_task, EDC_VIEWSHELL_THREAD_STACK_SIZE,
+//                EDC_ViewShellTask, &edc_ctrl, NULL, NULL,
+//                EDC_VIEWSHELL_THREAD_PRIO, 0, 0);

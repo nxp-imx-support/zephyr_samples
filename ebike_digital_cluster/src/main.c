@@ -23,6 +23,7 @@
 #include "../generated/events_init.h"
 
 #include "control.h"
+#include "custom.h"
 
 LOG_MODULE_REGISTER(main, 4U);
 
@@ -39,6 +40,12 @@ static struct gpio_dt_spec led = GPIO_DT_SPEC_GET_OR(DT_ALIAS(led0), gpios,
 
 k_tid_t tid_main;
 lv_ui guider_ui;
+
+edc_ctrl_t edc_ctrl;
+edc_dataModel_t edc_model;
+
+K_THREAD_STACK_DEFINE(edc_ctrl_thread_stack, EDC_CTRL_THREAD_STACK_SIZE);
+struct k_thread edc_ctrl_thread;
 
 void button_pressed(const struct device *dev, struct gpio_callback *cb,
 		    uint32_t pins)
@@ -118,20 +125,31 @@ int main(void)
 	display_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_display));
 	if (!device_is_ready(display_dev)) {
 		LOG_ERR("Device not ready, aborting test");
-		return;
+		return -ENODEV;
 	}
+
+	/**
+	 * create edc_ctrl thread as cooperative thread, then
+	 * yield() to let it run first. It will set itself to
+	 * a lower priority preemptive thread once initialized.
+	 */
+	k_thread_create(&edc_ctrl_thread, edc_ctrl_thread_stack,
+        EDC_CTRL_THREAD_STACK_SIZE,
+        (k_thread_entry_t)EDC_CtrlTask, (void*)&edc_ctrl, (void*)&edc_model, NULL,
+        EDC_CTRL_THREAD_START_PRIO, 0, K_NO_WAIT
+    );
+	k_yield();
+	LOG_INF("main thread resume");
 
 	setup_ui(&guider_ui);
    	events_init(&guider_ui);
+	custom_init(&guider_ui);
 
 	lv_task_handler();
 	//display_blanking_off(display_dev);
 	board_enable_backlight();
 
 	LOG_INF("main ok");
-
-	extern edc_ctrl_t edc_ctrl;
-	EDC_DataModelPublish(edc_ctrl.model);
 
 	while (true)
 	{

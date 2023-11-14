@@ -40,9 +40,7 @@ typedef enum _edc_lightMode
 typedef enum _edc_dataFlag
 {
     edc_dataFlag_modeFlag = (1U <<  1),
-    edc_dataFlag_CurrentSpeed = (1U << 2),
-    edc_dataFlag_averageSpeed = (1U << 3),
-    edc_dataFlag_distance = (1U << 4),
+    edc_dataFlag_currentSpeed = (1U << 2),
 } edc_dataFlag_t;
 
 //__attribute__((__packed))
@@ -60,8 +58,8 @@ struct _edc_data
         } modeData;
     };
 
-    int32_t currentSpeed, averageSpeed;
-    int32_t distance;
+    int32_t currentSpeed, averageSpeed /** speed in m/h */;
+    uint64_t distance /** distance in m */, elapsedTime /** time in us */;
     uint64_t timestamp; // TODO
 };
 
@@ -74,11 +72,29 @@ typedef struct _edc_dataModel
     sys_slist_t eventSubList;
     uint32_t eventSubMask;
 
-    struct k_spinlock lock;
+    struct k_mutex lock;
 
     /** storage section */
     edc_data_t data, shadow;
 } edc_dataModel_t;
+
+
+/** edc_dataModel_t helper macro */
+#define EDC_DATAMODEL_UPDATE_MEMBER(model, member, member_data) \
+    { \
+        model->shadow.member = model->data.member; \
+        model->data.member = member_data; \
+    }
+
+#define EDC_DATAMODEL_UPDATE_MEMBER_FROM_DATA(model, new_data, member) \
+    { \
+        model->shadow.member = model->data.member; \
+        model->data.member = new_data->member; \
+    }
+
+#define EDC_DATAMODEL_IS_MEMBER_EQUAL(model, member) \
+    (model->shadow.member == model->data.member)
+
 
 typedef struct _edc_dataModelSub
 {
@@ -109,10 +125,7 @@ int32_t EDC_DataModelSubscribe(edc_dataModelSub_t * const sub,
 
 int32_t EDC_DataModelUnsubscribe(edc_dataModelSub_t * const sub);
 
-static inline uint32_t EDC_DataModelEventWait(edc_dataModelSub_t * const sub, k_timeout_t timeout)
-{
-    return k_event_wait(&sub->dataModel->event, (1U << sub->event_bit), true, timeout);
-}
+int32_t EDC_DataModelEventWait(edc_dataModelSub_t * const sub, k_timeout_t timeout);
 
 void EDC_DataModelPublish(edc_dataModel_t * const model);
 

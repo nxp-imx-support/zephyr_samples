@@ -1,13 +1,7 @@
 #include "model.h"
 
 #include <zephyr/logging/log.h>
-LOG_MODULE_REGISTER(edc_model, 4U);
-
-#define EDC_DATAMODEL_UPDATE_DATA(model, new_data, member) \
-    { \
-        model->shadow.member = model->data.member; \
-        model->data.member = new_data->member; \
-    }
+LOG_MODULE_REGISTER(edc_model, 3U);
 
 int32_t EDC_DataModelInit(edc_dataModel_t * const model)
 {
@@ -23,26 +17,49 @@ void EDC_DataModelUpdate(edc_dataModel_t * const model, edc_data_t const * const
     assert(model);
     assert(data);
     //assert(flag);
-    k_spinlock_key_t key = k_spin_lock(&model->lock);
+    k_mutex_lock(&model->lock, K_FOREVER);
 
     if (flag & edc_dataFlag_modeFlag)
     {
-        EDC_DATAMODEL_UPDATE_DATA(model, data, modeFlag);
+        EDC_DATAMODEL_UPDATE_MEMBER_FROM_DATA(model, data, modeFlag);
+        if (model->shadow.modeData.driveMode == edc_driveMode_off
+            && data->modeData.driveMode != edc_driveMode_off)
+        {
+            model->data.currentSpeed = 0;
+            model->data.averageSpeed = 0;
+            model->data.distance = 0U;
+            model->data.elapsedTime = 0U;
+        }
     }
-    if (flag & edc_dataFlag_CurrentSpeed)
+    if (flag & edc_dataFlag_currentSpeed)
     {
-        EDC_DATAMODEL_UPDATE_DATA(model, data, currentSpeed);
-    }
-    if (flag & edc_dataFlag_averageSpeed)
-    {
-        EDC_DATAMODEL_UPDATE_DATA(model, data, averageSpeed);
-    }
-    if (flag & edc_dataFlag_distance)
-    {
-        EDC_DATAMODEL_UPDATE_DATA(model, data, distance);
+        EDC_DATAMODEL_UPDATE_MEMBER_FROM_DATA(model, data, currentSpeed);
+        EDC_DATAMODEL_UPDATE_MEMBER_FROM_DATA(model, data, timestamp);
+
+        if(model->shadow.modeData.driveMode != edc_driveMode_off)
+        {
+            uint64_t delta_elapsedTime = (model->data.timestamp - model->shadow.timestamp);
+            uint64_t new_elapsedTime = model->data.elapsedTime + delta_elapsedTime;
+            EDC_DATAMODEL_UPDATE_MEMBER(model, elapsedTime, new_elapsedTime);
+
+            uint64_t delta_distance = (double)(delta_elapsedTime / 1000000.0) * (double)(model->data.currentSpeed);
+            uint32_t new_distance = model->data.distance + delta_distance;
+            EDC_DATAMODEL_UPDATE_MEMBER(model, distance, new_distance);
+
+            int32_t new_averageSpeed;
+            if (new_elapsedTime != 0)
+            {
+                new_averageSpeed = (double)new_distance / (double)(new_elapsedTime / 1000000.0);
+            }
+            else
+            {
+                new_averageSpeed = 0;
+            }
+            EDC_DATAMODEL_UPDATE_MEMBER(model, averageSpeed, new_averageSpeed);
+        }
     }
 
-    k_spin_unlock(&model->lock, key);
+    k_mutex_unlock(&model->lock);
 }
 
 int32_t EDC_DataModelSubscribe(edc_dataModelSub_t * const sub,
@@ -52,7 +69,7 @@ int32_t EDC_DataModelSubscribe(edc_dataModelSub_t * const sub,
     assert(sub);
     if (sub->dataModel != NULL)
         return -EPERM;
-    k_spinlock_key_t key = k_spin_lock(&model->lock);
+    k_mutex_lock(&model->lock, K_FOREVER);
 
     bool event_bit_found = false;
     for (uint32_t i = 0U; i < 32U; ++i)
@@ -67,13 +84,16 @@ int32_t EDC_DataModelSubscribe(edc_dataModelSub_t * const sub,
     }
     if (event_bit_found == false)
     {
-        k_spin_unlock(&model->lock, key);
+        k_mutex_unlock(&model->lock);
+        LOG_ERR("thread %s sub fail", k_thread_name_get(k_current_get()));
         return -EAGAIN;
     }
 
     sub->dataModel = model;
     sys_slist_append(&model->eventSubList, &sub->node);
-    k_spin_unlock(&model->lock, key);
+    k_mutex_unlock(&model->lock);
+
+    LOG_DBG("thread %s sub with event_bit %d", k_thread_name_get(k_current_get()), sub->event_bit);
     return 0U;
 }
 
@@ -85,20 +105,43 @@ int32_t EDC_DataModelUnsubscribe(edc_dataModelSub_t * const sub)
         return -EINVAL;
     edc_dataModel_t * model = sub->dataModel;
 
-    k_spinlock_key_t key = k_spin_lock(&model->lock);
+    k_mutex_lock(&model->lock, K_FOREVER);
     //FIXME: what if a thread is waiting on this event?
     //optionally use high 16 bits for termination indicator
     bool remove = sys_slist_find_and_remove(&model->eventSubList, &sub->node);
     if(remove == false)
     {
-        k_spin_unlock(&model->lock, key);
+        k_mutex_unlock(&model->lock);
+        LOG_ERR("thread %s unsub failed", k_thread_name_get(k_current_get()));
         return -ENODATA;
     }
 
     model->eventSubMask &= ~(1U << sub->event_bit);
     sub->dataModel = NULL;
-    k_spin_unlock(&model->lock, key);
+    k_mutex_unlock(&model->lock);
+    LOG_DBG("thread %s unsub event_bit %d", k_thread_name_get(k_current_get()), sub->event_bit);
     return 0U;
+}
+
+int32_t EDC_DataModelEventWait(edc_dataModelSub_t * const sub, k_timeout_t timeout)
+{
+    LOG_DBG("thread %s wait event 0x%8.8x"
+            , k_thread_name_get(k_current_get())
+            , (uint32_t)(&sub->dataModel->event));
+    int32_t ret = k_event_wait(&sub->dataModel->event, (1U << sub->event_bit), true, timeout);
+    if(ret)
+    {
+        LOG_DBG("thread %s get event 0x%8.8x"
+                , k_thread_name_get(k_current_get())
+                , (uint32_t)(&sub->dataModel->event));
+    }
+    else
+    {
+        LOG_ERR("thread %s wait event 0x%8.8x timeout"
+                , k_thread_name_get(k_current_get())
+                , (uint32_t)(&sub->dataModel->event));
+    }
+    return ret;
 }
 
 void EDC_DataModelPublish(edc_dataModel_t * const model)
@@ -113,12 +156,11 @@ void EDC_DataModelPublish(edc_dataModel_t * const model)
     }
 #endif // ! KERNEL_VERSION_NUMBER
 
-    LOG_DBG("dm event 0x%8.8x publish 0x%x from thread %s\n",
+    LOG_DBG("event 0x%8.8x publish 0x%8.8x from thread %s",
            (uint32_t)(&model->event), model->eventSubMask,
            k_thread_name_get(k_current_get()));
 
-    //k_spinlock_key_t key = k_spin_lock(&model->lock);
+    //k_mutex_lock(&model->lock, K_FOREVER);
     k_event_post(&model->event, model->eventSubMask);
-    //k_spin_unlock(&model->lock, key);
-    LOG_DBG("dm publish done\n");
+    //k_mutex_unlock(&model->lock);
 }
