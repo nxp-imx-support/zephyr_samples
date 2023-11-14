@@ -1,7 +1,7 @@
 #include "comm.h"
 
 #include <zephyr/logging/log.h>
-LOG_MODULE_REGISTER(eds_control, 4U);
+LOG_MODULE_REGISTER(eds_control, 2U);
 
 struct can_filter const eds_comm_canRxFilter[] =
 {

@@ -20,7 +20,7 @@
 
 #include "comm.h"
 
-LOG_MODULE_REGISTER(main, 4U);
+LOG_MODULE_REGISTER(main, 3U);
 
 BUILD_ASSERT(DT_PROP_LEN(DT_PATH(zephyr_user), keypad_r_gpios) == 4U,
 	"keypad_gpio_r must have 4 elements");
