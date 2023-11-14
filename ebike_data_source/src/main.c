@@ -22,10 +22,91 @@
 
 LOG_MODULE_REGISTER(main, 4U);
 
+BUILD_ASSERT(DT_PROP_LEN(DT_PATH(zephyr_user), keypad_r_gpios) == 4U,
+	"keypad_gpio_r must have 4 elements");
+const struct gpio_dt_spec keypad_gpio_r[] =
+{
+	DT_FOREACH_PROP_ELEM_SEP(DT_PATH(zephyr_user), keypad_r_gpios,
+                                     GPIO_DT_SPEC_GET_BY_IDX, (,))
+};
+
+BUILD_ASSERT(DT_PROP_LEN(DT_PATH(zephyr_user), keypad_c_gpios) == 4U,
+	"keypad_gpio_c must have 4 elements");
+const struct gpio_dt_spec keypad_gpio_c[] =
+{
+	DT_FOREACH_PROP_ELEM_SEP(DT_PATH(zephyr_user), keypad_c_gpios,
+                                     GPIO_DT_SPEC_GET_BY_IDX, (,))
+};
+
+typedef struct _keypad_4x4
+{
+	const struct gpio_dt_spec *gpio_r;
+	const struct gpio_dt_spec *gpio_c;
+	uint16_t shadow, data;
+}keypad_4x4_t;
+
+int keypad_4x4_init(keypad_4x4_t *kp)
+{
+	int ret = 0;
+	for (int i = 0; i < 4; ++i)
+	{
+		ret = gpio_pin_configure_dt(&kp->gpio_r[i], GPIO_OUTPUT_ACTIVE);
+		if(ret)
+			LOG_ERR("keypad init fail R%d", i);
+		ret = gpio_pin_configure_dt(&kp->gpio_c[i], GPIO_INPUT);
+		if(ret)
+			LOG_ERR("keypad init fail C%d", i);
+	}
+	return 0;
+}
+
+void keypad_4x4_select_row(keypad_4x4_t *kp, uint8_t row_mask)
+{
+	for (int i = 0; i < 4; ++i)
+	{
+		if(row_mask & BIT(i))
+		{
+			gpio_pin_set_dt(&kp->gpio_r[i], 1);
+		}
+		else
+		{
+			gpio_pin_set_dt(&kp->gpio_r[i], 0);
+		}
+	}
+}
+
+void keypad_4x4_scan(keypad_4x4_t *kp)
+{
+	kp->shadow = kp->data;
+	kp->data = 0U;
+
+	LOG_DBG("keypad scan");
+
+	for (int i = 0; i < 4; ++i)
+	{
+		keypad_4x4_select_row(kp, BIT(i));
+		k_busy_wait(50);
+		for (int j = 0; j < 4; ++j)
+		{
+			if(gpio_pin_get_dt(&kp->gpio_c[j]))
+			{
+				kp->data |= BIT(i * 4 + j);
+				LOG_DBG("keypad %2.2d pressed", i * 4 + j);
+			}
+		}
+	}
+	keypad_4x4_select_row(kp, 0b1111);
+}
 
 k_tid_t tid_main;
 
+keypad_4x4_t keypad =
 {
+	.gpio_r = keypad_gpio_r,
+	.gpio_c = keypad_gpio_c,
+	.shadow = 0U,
+	.data = 0U,
+};
 
 eds_comm_t eds_comm;
 K_THREAD_STACK_DEFINE(eds_comm_thread_stack, EDS_COMM_THREAD_STACK_SIZE);
@@ -35,6 +116,7 @@ int main(void)
 {
 	int ret = 0;
 	tid_main = k_current_get();
+	uint64_t uptime;
 
 	LOG_INF("**** ebike data source demo ****\n"
 	);
@@ -54,10 +136,22 @@ int main(void)
 	k_yield();
 	LOG_INF("main thread resume");
 
+	keypad_4x4_init(&keypad);
+
 	while (true)
 	{
-		k_sleep(K_MSEC(1000));
+		uptime = k_uptime_get();
+		keypad_4x4_scan(&keypad);
 
+		uint16_t key_released = (keypad.data ^ keypad.shadow) & keypad.shadow;
+		extern eds_comm_t eds_comm;
+		EDS_CommKeyInput(&eds_comm, key_released);
+
+		// let's wait exactly 25 ms
+        int64_t sleep_time = uptime - k_uptime_get() + 10;
+        if(sleep_time > 0) {
+            k_sleep(K_MSEC(sleep_time));
+        }
 	}
 
 	return 0;
