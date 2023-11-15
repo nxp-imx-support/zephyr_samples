@@ -141,6 +141,13 @@ int main(void)
 	k_yield();
 	LOG_INF("main thread resume");
 
+	/** fill: 0x27, 0x1d, 0x16, 0xff */
+	extern uint32_t _bg1_alpha_1280x800_map_filled[];
+	for(int i = 0; i < (1280 * 800); ++i)
+	{
+		_bg1_alpha_1280x800_map_filled[i] = 0xff161d27U;
+	}
+
 	setup_ui(&guider_ui);
    	events_init(&guider_ui);
 	custom_init(&guider_ui);
