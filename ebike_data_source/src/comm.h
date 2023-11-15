@@ -21,6 +21,7 @@
 #define EDS_COMM_THREAD_PRIO (5)
 #define EDS_COMM_THREAD_START_PRIO (-1)
 #define EDS_COMM_THREAD_STACK_SIZE (0x4000U)
+#define EDS_COMM_WQ_STACK_SIZE (0x800U)
 
 #define EDS_COMM_WFM_OUT (1)
 #define EDS_COMM_WFM_OUT_DEVICE lpuart2
@@ -75,6 +76,9 @@ typedef struct _eds_comm
     struct device const *can_dev;
     uint32_t can_filterId[8];
     struct k_mutex lock;
+    struct k_timer send_timer;
+    struct k_work_q work_q;
+    struct k_work ts_work; /** used for time sync */
 #ifdef EDS_COMM_WFM_OUT
     struct device const *uart_dev;
 #endif // ! EDS_COMM_WFM_OUT
@@ -85,6 +89,7 @@ typedef struct _eds_comm
         int32_t target_accel; /** accel +/- button set nominal_accel, and then apply random swing on it */
         int32_t nominal_accel;
         int32_t curr_speed;
+        uint32_t ts_recv;
     }state;
 
     struct

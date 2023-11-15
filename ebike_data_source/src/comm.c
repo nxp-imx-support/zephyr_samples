@@ -32,6 +32,9 @@ void EDS_CommCanBusRxCb(struct device const *const dev, struct can_frame *frame,
     switch (frame->id)
     {
     case eds_comm_msg_timeSync:
+        /** send local timestamp */
+        comm->state.ts_recv = k_cyc_to_us_near32(k_cycle_get_64());
+        k_work_submit_to_queue(&comm->work_q, &comm->ts_work);
         break;
     default:
         break;
@@ -239,10 +242,34 @@ void EDS_CommKeyInput(eds_comm_t *const comm, uint16_t keycode)
     k_mutex_unlock(&comm->lock);
 }
 
+void EDS_CommTsWork(struct k_work *item)
+{
+    int ret;
+    eds_comm_t *comm =
+        CONTAINER_OF(item, eds_comm_t, ts_work);
+    LOG_DBG("timesync work");
+
+        static struct can_frame frame = {
+#ifdef CONFIG_CAN_FD_MODE
+	    .flags = CAN_FRAME_FDF | CAN_FRAME_BRS,
+#else
+	    .flags = 0U,
+#endif // CONFIG_CAN_FD_MODE
+        .id = eds_comm_msg_timeSync,
+        .dlc = 8U,
+    };
+    frame.data_32[0] = comm->state.ts_recv;
+    frame.data_32[1] = k_cyc_to_us_near32(k_cycle_get_64());
+
+    ret = EDS_CommCanBusSend(comm, &frame);
+
+}
+
+K_THREAD_STACK_DEFINE(eds_comm_wq_stack, EDS_COMM_WQ_STACK_SIZE);
+
 void EDS_CommTask(eds_comm_t *const comm, void* p2, void* p3)
 {
     int32_t ret;
-    int64_t uptime;
     struct can_frame frame;
 
     LOG_INF("eds comm task\n");
@@ -262,6 +289,15 @@ void EDS_CommTask(eds_comm_t *const comm, void* p2, void* p3)
     comm->kinetics.accel_ctrl_ki = 0.002;
     comm->kinetics.accel_ctrl_err = 0;
     comm->kinetics.accel_ctrl_err_intg = 0;
+
+    k_work_queue_init(&comm->work_q);
+    k_work_queue_start(&comm->work_q, eds_comm_wq_stack,
+                   EDS_COMM_WQ_STACK_SIZE, EDS_COMM_THREAD_PRIO + 1,
+                   NULL);
+
+    k_work_init(&comm->ts_work, EDS_CommTsWork);
+
+    k_timer_init(&comm->send_timer, NULL, NULL);
 
     ret = EDS_CommCanBusConfig(comm);
     if(ret != 0)
@@ -285,16 +321,15 @@ void EDS_CommTask(eds_comm_t *const comm, void* p2, void* p3)
 
     LOG_INF("eds comm can ok\n");
 
+    k_timer_start(&comm->send_timer, K_MSEC(125), K_MSEC(125));
+
     /** return to normal priority */
     k_thread_priority_set(k_current_get(), EDS_COMM_THREAD_PRIO);
 
     while (true)
     {
-        //extern eds_commSeq_t const seq_anim1[];
-        //k_thread_suspend(comm->thread_id);
-        //EDS_CommSendSequence(comm, &seq_anim1);
-        uptime = k_uptime_get();
-
+        /** wait for send_timer to trigger send */
+		k_timer_status_sync(&comm->send_timer);
         k_mutex_lock(&comm->lock, K_FOREVER);
 
         /** send can frame to set drive_mode */
@@ -311,13 +346,6 @@ void EDS_CommTask(eds_comm_t *const comm, void* p2, void* p3)
         ret = EDS_CommCanBusSend(comm, &frame);
 
         k_mutex_unlock(&comm->lock);
-
-        // let's wait exactly 100 ms
-        int64_t sleep_time = uptime - k_uptime_get() + 125;
-        if(sleep_time > 0) {
-            k_sleep(K_MSEC(sleep_time));
-        }
-
     }
 
 }

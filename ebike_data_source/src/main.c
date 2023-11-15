@@ -124,7 +124,7 @@ int main(void)
 {
 	int ret = 0;
 	tid_main = k_current_get();
-	uint64_t uptime;
+	struct k_timer kpScan_timer;
 
 	LOG_INF("**** ebike data source demo ****\n"
 	);
@@ -145,18 +145,20 @@ int main(void)
 	LOG_INF("main thread resume");
 
 	keypad_4x4_init(&keypad);
+	k_timer_init(&kpScan_timer, NULL, NULL);
+	k_timer_start(&kpScan_timer, K_MSEC(10), K_MSEC(10));
 
 	while (true)
 	{
-		uint8_t key_hold_timer[16];
-		uptime = k_uptime_get();
-		keypad_4x4_scan(&keypad);
+		static uint8_t key_hold_timer[16];
 
+		/** wait for kpScan_timer to trigger scan */
+		k_timer_status_sync(&kpScan_timer);
+
+		keypad_4x4_scan(&keypad);
 		uint16_t key_pressed = (keypad.data ^ keypad.shadow) & keypad.data;
 		KEYPAD_FOREACH_KEY(key_pressed, 1, {key_hold_timer[key_pressed_i] = 0U; })
-
 		uint16_t key_released = (keypad.data ^ keypad.shadow) & keypad.shadow;
-
 		uint16_t key_hold = keypad.data & keypad.shadow;
 		KEYPAD_FOREACH_KEY(key_hold, 1, {
 			key_hold_timer[key_hold_i] ++;
@@ -168,12 +170,6 @@ int main(void)
 		})
 
 		EDS_CommKeyInput(&eds_comm, key_released);
-
-		// let's wait exactly 25 ms
-        int64_t sleep_time = uptime - k_uptime_get() + 10;
-        if(sleep_time > 0) {
-            k_sleep(K_MSEC(sleep_time));
-        }
 	}
 
 	return 0;
