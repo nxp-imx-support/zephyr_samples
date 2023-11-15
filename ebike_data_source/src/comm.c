@@ -159,6 +159,12 @@ void EDS_CommSendUartStr(eds_comm_t *const comm, char *str)
 
 void EDS_CommKineticsModelUpdate(eds_comm_t *const comm)
 {
+    if(comm->state.drive_mode == eds_driveMode_sport)
+    {
+        comm->state.curr_speed = ((double)comm->state.target_accel) * 2.25;
+        return;
+    }
+
     /** calculate PI controller */
     comm->kinetics.accel_ctrl_err = (comm->state.target_accel - comm->state.nominal_accel);
     comm->kinetics.accel_ctrl_err_intg += comm->kinetics.accel_ctrl_err;
