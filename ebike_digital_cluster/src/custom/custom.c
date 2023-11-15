@@ -116,6 +116,11 @@ void EDC_ViewDisplayUpdate(edc_dataModelSub_t *const dm_sub)
         lv_label_set_text_fmt(guider_ui.screen_avg_speed, "%2d.%1.1d"
                 , UINT_INTEGER_BASE_1000(model->data.averageSpeed)
                 , UINT_FRAC_BASE_1000_D1(model->data.averageSpeed));
+
+        /** update timeSync */
+        lv_label_set_text_fmt(guider_ui.screen_date_label, "ping=%4.4d, offset=%+10.10d"
+                , model->data.timeSync.ping
+                , model->data.timeSync.offset);
     //}
 }
 

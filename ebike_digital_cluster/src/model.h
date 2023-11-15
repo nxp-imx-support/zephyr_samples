@@ -60,10 +60,21 @@ struct _edc_data
 
     int32_t currentSpeed, averageSpeed /** speed in m/h */;
     uint64_t distance /** distance in m */, elapsedTime /** time in us */;
-    uint64_t timestamp; // TODO
+    uint64_t timeStamp; // TODO
+
+    struct
+    {
+        uint32_t ping;
+        int32_t offset;
+    } timeSync;
 };
 
 typedef struct _edc_data edc_data_t;
+typedef struct _edc_ts
+{
+    struct k_mutex lock;
+    uint32_t t0, t1, t2, t3;
+}edc_timeSync_t;
 
 typedef struct _edc_dataModel
 {
@@ -75,7 +86,9 @@ typedef struct _edc_dataModel
     struct k_mutex lock;
 
     /** storage section */
+    edc_timeSync_t ts;
     edc_data_t data, shadow;
+
 } edc_dataModel_t;
 
 
@@ -128,5 +141,9 @@ int32_t EDC_DataModelUnsubscribe(edc_dataModelSub_t * const sub);
 int32_t EDC_DataModelEventWait(edc_dataModelSub_t * const sub, k_timeout_t timeout);
 
 void EDC_DataModelPublish(edc_dataModel_t * const model);
+
+int EDC_DataModelTimeSyncPrepare(edc_dataModel_t * const model, uint32_t* can_frame_data, uint8_t *dlc);
+
+void EDC_DataModelTimeSyncCalculate(edc_dataModel_t * const model, uint32_t* can_frame_data);
 
 #endif //! __EDC_MODEL_H__

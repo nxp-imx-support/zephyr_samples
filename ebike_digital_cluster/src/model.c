@@ -9,6 +9,8 @@ int32_t EDC_DataModelInit(edc_dataModel_t * const model)
     k_event_init(&model->event);
     sys_slist_init(&model->eventSubList);
     model->eventSubMask = 0U;
+    k_mutex_init(&model->lock);
+    k_mutex_init(&model->ts.lock);
     return 0U;
 }
 
@@ -34,11 +36,11 @@ void EDC_DataModelUpdate(edc_dataModel_t * const model, edc_data_t const * const
     if (flag & edc_dataFlag_currentSpeed)
     {
         EDC_DATAMODEL_UPDATE_MEMBER_FROM_DATA(model, data, currentSpeed);
-        EDC_DATAMODEL_UPDATE_MEMBER_FROM_DATA(model, data, timestamp);
+        EDC_DATAMODEL_UPDATE_MEMBER_FROM_DATA(model, data, timeStamp);
 
         if(model->shadow.modeData.driveMode != edc_driveMode_off)
         {
-            uint64_t delta_elapsedTime = (model->data.timestamp - model->shadow.timestamp);
+            uint64_t delta_elapsedTime = (model->data.timeStamp - model->shadow.timeStamp);
             uint64_t new_elapsedTime = model->data.elapsedTime + delta_elapsedTime;
             EDC_DATAMODEL_UPDATE_MEMBER(model, elapsedTime, new_elapsedTime);
 
@@ -163,4 +165,40 @@ void EDC_DataModelPublish(edc_dataModel_t * const model)
     //k_mutex_lock(&model->lock, K_FOREVER);
     k_event_post(&model->event, model->eventSubMask);
     //k_mutex_unlock(&model->lock);
+}
+
+int EDC_DataModelTimeSyncPrepare(edc_dataModel_t * const model, uint32_t* can_frame_data, uint8_t *dlc)
+{
+    int ret = k_mutex_lock(&model->ts.lock, K_NO_WAIT);
+    if(ret)
+    {
+        LOG_ERR("cannot acquire ts lock [%d]", ret);
+        return ret;
+    }
+    model->ts.t0 = k_cyc_to_us_near32(k_cycle_get_64());
+    can_frame_data[0] = model->ts.t0;
+    *dlc = 4U;
+    return 0;
+}
+
+void EDC_DataModelTimeSyncCalculate(edc_dataModel_t * const model, uint32_t* can_frame_data)
+{
+    model->ts.t3 = k_cyc_to_us_near32(k_cycle_get_64());
+    model->ts.t1 = can_frame_data[0];
+    model->ts.t2 = can_frame_data[1];
+
+    int64_t t0 = model->ts.t0;
+    int64_t t1 = model->ts.t1;
+    int64_t t2 = model->ts.t2;
+    int64_t t3 = model->ts.t3;
+
+    uint32_t new_ping = (t3 - t0) - (t2 - t1); /** in us */
+    EDC_DATAMODEL_UPDATE_MEMBER(model, timeSync.ping, new_ping);
+
+    int32_t new_offset = ((t1 - t0) + (t2 - t3)) / 2; /** in us */
+    EDC_DATAMODEL_UPDATE_MEMBER(model, timeSync.offset, new_offset);
+
+    LOG_DBG("timeSync ping = %d us, offset = %d us", new_ping, new_offset);
+
+    k_mutex_unlock(&model->ts.lock);
 }

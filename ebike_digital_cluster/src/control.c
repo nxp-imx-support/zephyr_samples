@@ -40,27 +40,54 @@ void EDC_CtrlCanBusRxCb(struct device const *const dev, struct can_frame *frame,
     static edc_data_t update_data;
 
     edc_ctrl_t * const ctrl = (edc_ctrl_t*)userData;
-    LOG_DBG("can rx frame: id=0x%3.3x, dlc=%d\n",
+    LOG_DBG("can rx frame: id=0x%3.3x, dlc=%d",
            frame->id, frame->dlc);
 
     switch (frame->id)
     {
     case edc_ctrl_canMsg_timeSync:
+        LOG_DBG("update timeSync %d", frame->data_32[0]);
+        if(frame->dlc == 8U)
+        {
+            EDC_DataModelTimeSyncCalculate(ctrl->model, &frame->data_32[0]);
+        }
+        else
+        {
+            LOG_ERR("timeSync: frame format error, expect dlc = 8");
+        }
         break;
     case edc_ctrl_canMsg_driveMode:
-        LOG_DBG("update driveMode %d\n", frame->data_32[0]);
-        update_data.modeFlag = frame->data_32[0];
-        EDC_DataModelUpdate(ctrl->model, &update_data, edc_dataFlag_modeFlag);
-        //k_work_submit(&ctrl->pub_work);
-        k_wakeup(ctrl->thread_id);
+        LOG_DBG("update driveMode %d", frame->data_32[0]);
+        if(frame->dlc == 4U)
+        {
+            update_data.modeFlag = frame->data_32[0];
+            EDC_DataModelUpdate(ctrl->model, &update_data, edc_dataFlag_modeFlag);
+            k_wakeup(ctrl->thread_id);
+        }
+        else
+        {
+            LOG_ERR("driveMode: frame format error, expect dlc = 4");
+        }
         break;
     case edc_ctrl_canMsg_currSpeed:
-        LOG_DBG("update currSpeed %d\n", frame->data_32[0]);
-        update_data.currentSpeed = frame->data_32[0];
-        update_data.timestamp = k_uptime_get();
-        EDC_DataModelUpdate(ctrl->model, &update_data, edc_dataFlag_currentSpeed);
-        //k_work_submit(&ctrl->pub_work);
-        k_wakeup(ctrl->thread_id);
+        LOG_DBG("update currSpeed %d", frame->data_32[0]);
+        if(frame->dlc == 4U)
+        {
+            if (k_timer_remaining_get(&ctrl->ts_timer) == 0U)
+            {
+                /** timeSync not started until first currSpeed arrives */
+                LOG_DBG("got first frame, enable timeSync");
+                k_timer_start(&ctrl->ts_timer, K_MSEC(125), K_MSEC(125));
+            }
+            update_data.currentSpeed = frame->data_32[0];
+            update_data.timeStamp = k_uptime_get();
+            EDC_DataModelUpdate(ctrl->model, &update_data, edc_dataFlag_currentSpeed);
+            k_wakeup(ctrl->thread_id);
+        }
+        else
+        {
+            LOG_ERR("currSpeed: frame format error, expect dlc = 4");
+        }
         break;
     default:
         break;
@@ -73,6 +100,10 @@ void EDC_CtrlCanBusTxCb(struct device const *const dev, int32_t error, void *use
     if (error != 0)
     {
         LOG_DBG("can tx error [%d]", error);
+    }
+    else
+    {
+        LOG_DBG("can tx frame");
     }
 }
 
@@ -119,18 +150,55 @@ int32_t EDC_CtrlCanBusConfig(edc_ctrl_t * const ctrl)
     return 0;
 }
 
+void EDC_CtrlTsWork(struct k_work *item)
+{
+    int ret;
+    edc_ctrl_t *ctrl =
+        CONTAINER_OF(item, edc_ctrl_t, ts_work);
+    LOG_DBG("timesync work");
+
+    static struct can_frame frame = {
+#ifdef CONFIG_CAN_FD_MODE
+	    .flags = CAN_FRAME_FDF | CAN_FRAME_BRS,
+#else
+	    .flags = 0U,
+#endif // CONFIG_CAN_FD_MODE
+        .id = edc_ctrl_canMsg_timeSync,
+    };
+    ret = EDC_DataModelTimeSyncPrepare(ctrl->model, &frame.data_32[0], &frame.dlc);
+    if(ret)
+    {
+        LOG_ERR("ts work is blocked, timer stopped [%d]", ret);
+        k_timer_stop(&ctrl->ts_timer);
+        return;
+    }
+    ret = EDC_CtrlCanBusSend(ctrl, &frame);
+    if(ret)
+    {
+        LOG_ERR("ts work can send fail [%d]", ret);
+        return;
+    }
+}
+
+void EDC_CtrlTsTimerWork(struct k_timer *item)
+{
+    edc_ctrl_t *ctrl =
+        CONTAINER_OF(item, edc_ctrl_t, ts_timer);
+    k_work_submit_to_queue(&ctrl->work_q, &ctrl->ts_work);
+}
 
 K_THREAD_STACK_DEFINE(edc_viewDisplay_thread_stack, EDC_VIEWDISPLAY_THREAD_STACK_SIZE);
 struct k_thread edc_viewDisplay_thread;
 void EDC_ViewDisplayTask(edc_ctrl_t * const ctrl, void*, void*); // defined in custom/custom.c
+
+K_THREAD_STACK_DEFINE(edc_ctrl_wq_stack, EDC_CTRL_WQ_STACK_SIZE);
 
 void EDC_CtrlTask(edc_ctrl_t *const ctrl, edc_dataModel_t *const model, void*)
 {
     assert(ctrl);
     int ret;
 
-
-    LOG_INF("edc ctrl task\n");
+    LOG_INF("edc ctrl task");
     ctrl->thread_id = k_current_get();
     k_thread_name_set(ctrl->thread_id, "edc_ctrl");
 
@@ -138,14 +206,23 @@ void EDC_CtrlTask(edc_ctrl_t *const ctrl, edc_dataModel_t *const model, void*)
     ctrl->model = model;
     k_work_init(&ctrl->pub_work, EDC_CtrlPubWorkHandler);
 
-    LOG_INF("edc view start ok\n");
+    k_work_queue_init(&ctrl->work_q);
+    k_work_queue_start(&ctrl->work_q, edc_ctrl_wq_stack,
+                   EDC_CTRL_WQ_STACK_SIZE, EDC_CTRL_THREAD_PRIO + 1,
+                   NULL);
+
+    k_work_init(&ctrl->ts_work, EDC_CtrlTsWork);
+    k_timer_init(&ctrl->ts_timer, EDC_CtrlTsTimerWork, NULL);
+    /** timeSync not started until first currSpeed arrives */
+
+    LOG_INF("edc ctrl init ok");
 
     ret = EDC_CtrlCanBusConfig(ctrl);
     if(ret != 0)
     {
         return ret;
     }
-    LOG_INF("edc ctrl can config ok\n");
+    LOG_INF("edc ctrl can config ok");
 
 	/**
 	 * create edc_viewDisplay thread as cooperative thread, then
@@ -158,7 +235,8 @@ void EDC_CtrlTask(edc_ctrl_t *const ctrl, edc_dataModel_t *const model, void*)
         EDC_VIEWDISPLAY_THREAD_START_PRIO, 0, K_NO_WAIT
     );
 	k_yield();
-	LOG_INF("main thread resume");
+
+    LOG_INF("edc view start ok");
 
     ret = can_start(ctrl->can_dev);
     if (ret != 0)
