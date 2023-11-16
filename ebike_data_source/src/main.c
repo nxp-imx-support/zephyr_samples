@@ -151,6 +151,8 @@ int main(void)
 	while (true)
 	{
 		static uint8_t key_hold_timer[16];
+		/** only enable long press for SP and SN */
+		const uint16_t key_hold_enable = eds_comm_keyCode_SP | eds_comm_keyCode_SN;
 
 		/** wait for kpScan_timer to trigger scan */
 		k_timer_status_sync(&kpScan_timer);
@@ -159,10 +161,10 @@ int main(void)
 		uint16_t key_pressed = (keypad.data ^ keypad.shadow) & keypad.data;
 		KEYPAD_FOREACH_KEY(key_pressed, 1, {key_hold_timer[key_pressed_i] = 0U; })
 		uint16_t key_released = (keypad.data ^ keypad.shadow) & keypad.shadow;
-		uint16_t key_hold = keypad.data & keypad.shadow;
+		uint16_t key_hold = keypad.data & keypad.shadow & key_hold_enable;
 		KEYPAD_FOREACH_KEY(key_hold, 1, {
 			key_hold_timer[key_hold_i] ++;
-			if (key_hold_timer[key_hold_i] > 49)
+			if (key_hold_timer[key_hold_i] > 24)
 			{
 				key_released |= BIT(key_hold_i);
 				key_hold_timer[key_hold_i] = 0U;
