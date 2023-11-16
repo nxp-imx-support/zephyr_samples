@@ -25,18 +25,12 @@
 #include "control.h"
 #include "custom.h"
 
-LOG_MODULE_REGISTER(main, 4U);
+LOG_MODULE_REGISTER(main, CONFIG_EDC_MAIN_LOG_LEVEL);
 
-#define SW0_NODE DT_ALIAS(sw0)
-#if !DT_NODE_HAS_STATUS(SW0_NODE, okay)
-#error "Unsupported board: sw0 devicetree alias is not defined"
-#endif
-static const struct gpio_dt_spec button = GPIO_DT_SPEC_GET_OR(SW0_NODE, gpios,
-							      {0});
-static struct gpio_callback button_cb_data;
-
-static struct gpio_dt_spec led = GPIO_DT_SPEC_GET_OR(DT_ALIAS(led0), gpios,
-						     {0});
+#ifdef CONFIG_EDC_TIMING_GPIO
+static struct gpio_dt_spec timing_gpio =
+		GPIO_DT_SPEC_GET(DT_PATH(zephyr_user), timing_gpios);
+#endif // CONFIG_EDC_TIMING_GPIO
 
 k_tid_t tid_main;
 lv_ui guider_ui;
@@ -46,15 +40,6 @@ edc_dataModel_t edc_model;
 
 K_THREAD_STACK_DEFINE(edc_ctrl_thread_stack, EDC_CTRL_THREAD_STACK_SIZE);
 struct k_thread edc_ctrl_thread;
-
-void button_pressed(const struct device *dev, struct gpio_callback *cb,
-		    uint32_t pins)
-{
-	extern edc_ctrl_t edc_ctrl;
-	printk("Button pressed at %" PRIu32 "\n", k_cycle_get_32());
-	k_thread_resume(edc_ctrl.thread_id);
-	//EDC_DataModelPublish(&edc_model);
-}
 
 void board_enable_backlight(void)
 {
@@ -74,51 +59,29 @@ void board_enable_backlight(void)
 int main(void)
 {
 	int ret;
+	struct k_timer timer;
 	tid_main = k_current_get();
-
-	if (!gpio_is_ready_dt(&button)) {
-		printk("Error: button device %s is not ready\n",
-		       button.port->name);
-		return -ENODEV;
-	}
-
-	if (led.port && !device_is_ready(led.port)) {
-		ret = -ENODEV;
-		printk("Error %d: LED device %s is not ready; ignoring it\n",
-		       ret, led.port->name);
-		led.port = NULL;
-	}
 
 	printk("**** ebike digital cluster demo ****\n"
 	);
 
-	ret = gpio_pin_configure_dt(&button, GPIO_INPUT);
-	if (ret != 0) {
-		printk("Error %d: failed to configure %s pin %d\n",
-		       ret, button.port->name, button.pin);
+#ifdef CONFIG_EDC_TIMING_GPIO
+	if (timing_gpio.port && !device_is_ready(timing_gpio.port)) {
+		ret = -ENODEV;
+		LOG_ERR("Error %d: timing_gpio device %s is not ready\n",
+		       ret, timing_gpio.port->name);
 		return ret;
 	}
-	ret = gpio_pin_interrupt_configure_dt(&button,
-					      GPIO_INT_EDGE_TO_ACTIVE);
-	if (ret != 0) {
-		printk("Error %d: failed to configure interrupt on %s pin %d\n",
-			ret, button.port->name, button.pin);
-		return ret;
-	}
-	gpio_init_callback(&button_cb_data, button_pressed, BIT(button.pin));
-	gpio_add_callback(button.port, &button_cb_data);
-	printk("Set up button at %s pin %d\n", button.port->name, button.pin);
 
-	if (led.port) {
-		ret = gpio_pin_configure_dt(&led, GPIO_OUTPUT);
-		if (ret != 0) {
-			printk("Error %d: failed to configure LED device %s pin %d\n",
-			       ret, led.port->name, led.pin);
-			led.port = NULL;
-		} else {
-			printk("Set up LED at %s pin %d\n", led.port->name, led.pin);
-		}
+	ret = gpio_pin_configure_dt(&timing_gpio, GPIO_OUTPUT_ACTIVE);
+	if (ret != 0) {
+		LOG_ERR("Error %d: failed to configure timing_gpio at device %s pin %d\n",
+		       ret, timing_gpio.port->name, timing_gpio.pin);
+		return ret;
+	} else {
+		LOG_INF("Set up timing_gpio at device %s pin %d\n", timing_gpio.port->name, timing_gpio.pin);
 	}
+#endif // CONFIG_EDC_TIMING_GPIO
 
 	const struct device *display_dev;
 
@@ -127,19 +90,6 @@ int main(void)
 		LOG_ERR("Device not ready, aborting test");
 		return -ENODEV;
 	}
-
-	/**
-	 * create edc_ctrl thread as cooperative thread, then
-	 * yield() to let it run first. It will set itself to
-	 * a lower priority preemptive thread once initialized.
-	 */
-	k_thread_create(&edc_ctrl_thread, edc_ctrl_thread_stack,
-        EDC_CTRL_THREAD_STACK_SIZE,
-        (k_thread_entry_t)EDC_CtrlTask, (void*)&edc_ctrl, (void*)&edc_model, NULL,
-        EDC_CTRL_THREAD_START_PRIO, 0, K_NO_WAIT
-    );
-	k_yield();
-	LOG_INF("main thread resume");
 
 	/** fill: 0x27, 0x1d, 0x16, 0xff */
 	extern uint32_t _bg1_alpha_1280x800_map_filled[];
@@ -156,12 +106,36 @@ int main(void)
 	//display_blanking_off(display_dev);
 	board_enable_backlight();
 
-	LOG_INF("main ok");
+	LOG_INF("lvgl display output started");
+#ifdef CONFIG_EDC_TIMING_GPIO
+	ret = gpio_pin_toggle_dt(&timing_gpio);
+	if(ret)	{
+		LOG_ERR("toggle timing_gpio err [%d]", ret);
+		return ret;
+	}
+#endif // CONFIG_EDC_TIMING_GPIO
+
+	/**
+	 * create edc_ctrl thread as cooperative thread, then
+	 * yield() to let it run first. It will set itself to
+	 * a lower priority preemptive thread once initialized.
+	 */
+	k_thread_create(&edc_ctrl_thread, edc_ctrl_thread_stack,
+        EDC_CTRL_THREAD_STACK_SIZE,
+        (k_thread_entry_t)EDC_CtrlTask, (void*)&edc_ctrl, (void*)&edc_model, NULL,
+        EDC_CTRL_THREAD_START_PRIO, 0, K_NO_WAIT
+    );
+	k_yield();
+
+	LOG_INF("main thread resume");
+	k_timer_init(&timer, NULL, NULL);
+	k_timer_start(&timer, K_USEC(33333), K_USEC(33333));
 
 	while (true)
 	{
+		/** wait for timer to trigger display */
+		k_timer_status_sync(&timer);
 		lv_task_handler();
-		k_sleep(K_MSEC(10));
 	}
 
 	return 0;

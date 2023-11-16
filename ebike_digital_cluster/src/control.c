@@ -2,7 +2,7 @@
 #include "custom.h"
 
 #include <zephyr/logging/log.h>
-LOG_MODULE_REGISTER(edc_control, 3U);
+LOG_MODULE_REGISTER(edc_control, CONFIG_EDC_CONTROL_LOG_LEVEL);
 
 #ifdef CONFIG_CAN_FD_MODE
 #define CTRL_CAN_FILTER_FLAGS (CAN_FILTER_FDF | CAN_FILTER_DATA)

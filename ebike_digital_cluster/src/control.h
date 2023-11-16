@@ -24,9 +24,9 @@
 
 typedef enum _edc_ctrl_canMsg
 {
-    edc_ctrl_canMsg_timeSync = 0x100,
-    edc_ctrl_canMsg_driveMode = 0x101,
-    edc_ctrl_canMsg_currSpeed = 0x102,
+    edc_ctrl_canMsg_timeSync = CONFIG_EDC_CAN_FRAME_ID_BASE + 0,
+    edc_ctrl_canMsg_driveMode = CONFIG_EDC_CAN_FRAME_ID_BASE + 1,
+    edc_ctrl_canMsg_currSpeed = CONFIG_EDC_CAN_FRAME_ID_BASE + 2,
 } edc_ctrl_canMsg_t;
 
 typedef struct _edc_ctrl

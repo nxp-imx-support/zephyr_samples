@@ -1,0 +1,45 @@
+# Copyright (c) 2022 Henrik Brix Andersen <henrik@brixandersen.dk>
+# SPDX-License-Identifier: Apache-2.0
+
+menu "Ebike digital cluster demo"
+
+config EDC_CAN_FRAME_ID_BASE
+	hex "CAN ID"
+	default 0x100
+	range 0x000 0x7fd
+	help
+	  CAN frame id base. 3 CAN frame ids are used in this demo.
+
+config EDC_CAN_FD_MODE
+	bool "Send CAN-FD format frames"
+	select CAN_FD_MODE
+    default n
+	help
+	  Selects CAN_FD_MODE
+
+config EDC_SHELL
+	bool "Enable edc shell debug command"
+    default y if SHELL
+	depends on SHELL
+	help
+	  Maximum number of CAN frames to enqueue for transmission.
+
+config EDC_TIMING_GPIO
+    bool "Filp GPIO to measure time"
+    default n
+
+module = EDC_MAIN
+module-str = ebike digital cluster main thread
+source "subsys/logging/Kconfig.template.log_config"
+
+module = EDC_CONTROL
+module-str = ebike digital cluster control
+source "subsys/logging/Kconfig.template.log_config"
+
+module = EDC_MODEL
+module-str = ebike digital cluster model
+source "subsys/logging/Kconfig.template.log_config"
+
+endmenu
+
+source "Kconfig.zephyr"

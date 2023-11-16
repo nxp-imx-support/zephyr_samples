@@ -18,6 +18,10 @@
         reg = <0x81200000 DT_SIZE_M(1792)>;
     };
 
+    zephyr,user {
+        timing_gpios = <&gpio2 4 GPIO_ACTIVE_HIGH>;
+    };
+
 };
 
 &media_blk_ctrl{

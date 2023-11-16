@@ -1,7 +1,7 @@
 #include "model.h"
 
 #include <zephyr/logging/log.h>
-LOG_MODULE_REGISTER(edc_model, 3U);
+LOG_MODULE_REGISTER(edc_model, CONFIG_EDC_MODEL_LOG_LEVEL);
 
 int32_t EDC_DataModelInit(edc_dataModel_t * const model)
 {
