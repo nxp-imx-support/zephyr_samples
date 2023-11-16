@@ -82,7 +82,9 @@ static int cmd_edc_show(const struct shell *sh, size_t argc, char **argv)
             cmd_stringLut_turnLight[model->data.modeData.rearLight]);
     shell_print(sh, "Speed: %d.%d km/h", model->data.currentSpeed / 1000, model->data.currentSpeed % 1000);
     shell_print(sh, "Average speed: %d.%d km/h", model->data.averageSpeed / 1000, model->data.averageSpeed % 1000);
-	shell_print(sh, "Distance: %d.%d km", model->data.distance / 1000, model->data.distance % 1000);
+	shell_print(sh, "Distance: %d.%d km", (model->data.distance / 1000) / 1000, (model->data.distance / 1000) % 1000);
+
+	shell_print(sh, "Time sync: ping: %3.3d us, diff: %-10.10d", model->data.timeSync.ping, model->data.timeSync.offset);
     return 0;
 }
 

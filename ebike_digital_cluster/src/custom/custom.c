@@ -51,19 +51,18 @@ void custom_init(lv_ui *ui)
     lv_obj_set_style_text_color(guider_ui.screen_drive_mode, lv_color_hex(0x909090), 0);
     lv_label_set_text(guider_ui.screen_drive_mode, "P. OFF");
     /** update currentSpeed */
-	lv_label_set_text_fmt(guider_ui.screen_speed, "%2.2d.%1.1d"
-            , UINT_INTEGER_BASE_1000(0)
-            , UINT_FRAC_BASE_1000_D1(0));
+	lv_label_set_text_fmt(guider_ui.screen_speed, "00.0");
     lv_meter_set_indicator_value(guider_ui.screen_meter, guider_ui.screen_meter_scale_1_ndimg_0
-            , 0 / 1000);
+            , 0);
     /** update distance */
-    lv_label_set_text_fmt(guider_ui.screen_distance_value, "%3d.%1.1d"
-            , UINT_INTEGER_BASE_1000(0)
-            , UINT_FRAC_BASE_1000_D1(0 % 1000));
+    lv_label_set_text_fmt(guider_ui.screen_distance_value, "0.0");
     /** update averageSpeed */
-    lv_label_set_text_fmt(guider_ui.screen_speed, "%2d.%1.1d"
-            , UINT_INTEGER_BASE_1000(0)
-            , UINT_FRAC_BASE_1000_D1(0));
+    lv_label_set_text_fmt(guider_ui.screen_speed, "0.0");
+
+    /** update timeSync */
+    lv_label_set_text_fmt(guider_ui.screen_date_label, "ping:N/A us");
+    lv_label_set_text_fmt(guider_ui.screen_time_label, "offset:N/A");
+
 }
 
 void EDC_ViewDisplayUpdate(edc_dataModelSub_t *const dm_sub)
@@ -90,13 +89,13 @@ void EDC_ViewDisplayUpdate(edc_dataModelSub_t *const dm_sub)
             lv_obj_set_style_text_color(guider_ui.screen_drive_mode, lv_color_hex(0xffffff), 0);
             lv_label_set_text(guider_ui.screen_drive_mode, "NORMAL");
             break;
-        case edc_driveMode_sport:
-            lv_obj_set_style_text_color(guider_ui.screen_drive_mode, lv_color_hex(0x00bfff), 0);
-            lv_label_set_text(guider_ui.screen_drive_mode, "SPORT");
-            break;
         case edc_driveMode_rain:
             lv_obj_set_style_text_color(guider_ui.screen_drive_mode, lv_color_hex(0x00ffff), 0);
             lv_label_set_text(guider_ui.screen_drive_mode, "RAIN");
+            break;
+        case edc_driveMode_sport:
+            lv_obj_set_style_text_color(guider_ui.screen_drive_mode, lv_color_hex(0x00bfff), 0);
+            lv_label_set_text(guider_ui.screen_drive_mode, "SPORT");
             break;
         }
     //}
@@ -110,17 +109,29 @@ void EDC_ViewDisplayUpdate(edc_dataModelSub_t *const dm_sub)
                 , model->data.currentSpeed / 100);
         /** update distance */
         lv_label_set_text_fmt(guider_ui.screen_distance_value, "%3d.%1.1d"
-                , UINT_INTEGER_BASE_1000(model->data.distance)
-                , UINT_FRAC_BASE_1000_D1(model->data.distance % 1000));
+                , UINT_INTEGER_BASE_1000(model->data.distance / 1000)
+                , UINT_FRAC_BASE_1000_D1(model->data.distance / 1000));
         /** update averageSpeed */
         lv_label_set_text_fmt(guider_ui.screen_avg_speed, "%2d.%1.1d"
                 , UINT_INTEGER_BASE_1000(model->data.averageSpeed)
                 , UINT_FRAC_BASE_1000_D1(model->data.averageSpeed));
 
         /** update timeSync */
-        lv_label_set_text_fmt(guider_ui.screen_date_label, "ping=%4.4d, offset=%+10.10d"
-                , model->data.timeSync.ping
+        if(model->data.timeSync.ping > 0)
+        {
+            lv_label_set_text_fmt(guider_ui.screen_date_label, "ping:%3.3d us"
+                , model->data.timeSync.ping);
+            lv_label_set_text_fmt(guider_ui.screen_time_label, "diff:%+010d"
                 , model->data.timeSync.offset);
+        }
+        else
+        {
+            lv_label_set_text_fmt(guider_ui.screen_date_label, "ping:N/A us"
+                , model->data.timeSync.ping);
+            lv_label_set_text_fmt(guider_ui.screen_time_label, "diff:N/A"
+                , model->data.timeSync.offset);
+        }
+
     //}
 }
 

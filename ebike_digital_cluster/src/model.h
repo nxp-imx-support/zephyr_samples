@@ -16,8 +16,8 @@ typedef enum _edc_driveMode
     edc_driveMode_lock, // child lock / protection
     edc_driveMode_eco,
     edc_driveMode_normal,
-    edc_driveMode_sport,
     edc_driveMode_rain,
+    edc_driveMode_sport,
 } edc_driveMode_t;
 
 typedef enum _edc_lightMode
@@ -59,12 +59,11 @@ struct _edc_data
     };
 
     int32_t currentSpeed, averageSpeed /** speed in m/h */;
-    uint64_t distance /** distance in m */, elapsedTime /** time in us */;
-    uint64_t timeStamp; // TODO
+    uint64_t distance /** distance in mm */, elapsedTime /** time in ms */;
 
     struct
     {
-        uint32_t ping;
+        int32_t ping;
         int32_t offset;
     } timeSync;
 };
@@ -72,7 +71,7 @@ struct _edc_data
 typedef struct _edc_data edc_data_t;
 typedef struct _edc_ts
 {
-    struct k_mutex lock;
+    struct k_sem is_free;
     uint32_t t0, t1, t2, t3;
 }edc_timeSync_t;
 

@@ -10,7 +10,7 @@ int32_t EDC_DataModelInit(edc_dataModel_t * const model)
     sys_slist_init(&model->eventSubList);
     model->eventSubMask = 0U;
     k_mutex_init(&model->lock);
-    k_mutex_init(&model->ts.lock);
+    k_sem_init(&model->ts.is_free, 1, 1);
     return 0U;
 }
 
@@ -27,31 +27,30 @@ void EDC_DataModelUpdate(edc_dataModel_t * const model, edc_data_t const * const
         if (model->shadow.modeData.driveMode == edc_driveMode_off
             && data->modeData.driveMode != edc_driveMode_off)
         {
-            model->data.currentSpeed = 0;
-            model->data.averageSpeed = 0;
-            model->data.distance = 0U;
-            model->data.elapsedTime = 0U;
+            model->data.currentSpeed = model->shadow.currentSpeed = 0;
+            model->data.averageSpeed = model->shadow.averageSpeed = 0;
+            model->data.distance = model->shadow.distance = 0U;
+            model->data.elapsedTime = model->shadow.elapsedTime = 0U;
         }
     }
     if (flag & edc_dataFlag_currentSpeed)
     {
         EDC_DATAMODEL_UPDATE_MEMBER_FROM_DATA(model, data, currentSpeed);
-        EDC_DATAMODEL_UPDATE_MEMBER_FROM_DATA(model, data, timeStamp);
 
         if(model->shadow.modeData.driveMode != edc_driveMode_off)
         {
-            uint64_t delta_elapsedTime = (model->data.timeStamp - model->shadow.timeStamp);
-            uint64_t new_elapsedTime = model->data.elapsedTime + delta_elapsedTime;
+            uint64_t delta_elapsedTime /** ms */ = 125; // 125ms
+            uint64_t new_elapsedTime /** ms */ = model->data.elapsedTime + delta_elapsedTime;
             EDC_DATAMODEL_UPDATE_MEMBER(model, elapsedTime, new_elapsedTime);
 
-            uint64_t delta_distance = (double)(delta_elapsedTime / 1000000.0) * (double)(model->data.currentSpeed);
-            uint32_t new_distance = model->data.distance + delta_distance;
+            uint64_t delta_distance /** mm */ = ((double)delta_elapsedTime) * ((double)model->data.currentSpeed) / 3600.0;
+            uint32_t new_distance /** mm */ = model->data.distance + delta_distance;
             EDC_DATAMODEL_UPDATE_MEMBER(model, distance, new_distance);
 
             int32_t new_averageSpeed;
             if (new_elapsedTime != 0)
             {
-                new_averageSpeed = (double)new_distance / (double)(new_elapsedTime / 1000000.0);
+                new_averageSpeed = ((double)new_distance * 3600) / ((double)new_elapsedTime);
             }
             else
             {
@@ -169,10 +168,10 @@ void EDC_DataModelPublish(edc_dataModel_t * const model)
 
 int EDC_DataModelTimeSyncPrepare(edc_dataModel_t * const model, uint32_t* can_frame_data, uint8_t *dlc)
 {
-    int ret = k_mutex_lock(&model->ts.lock, K_NO_WAIT);
+    int ret = k_sem_take(&model->ts.is_free, K_NO_WAIT);
     if(ret)
     {
-        LOG_ERR("cannot acquire ts lock [%d]", ret);
+        LOG_ERR("another time sync task already in progress! [%d]", ret);
         return ret;
     }
     model->ts.t0 = k_cyc_to_us_near32(k_cycle_get_64());
@@ -200,5 +199,5 @@ void EDC_DataModelTimeSyncCalculate(edc_dataModel_t * const model, uint32_t* can
 
     LOG_DBG("timeSync ping = %d us, offset = %d us", new_ping, new_offset);
 
-    k_mutex_unlock(&model->ts.lock);
+    k_sem_give(&model->ts.is_free);
 }

@@ -47,47 +47,46 @@ void EDC_CtrlCanBusRxCb(struct device const *const dev, struct can_frame *frame,
     {
     case edc_ctrl_canMsg_timeSync:
         LOG_DBG("update timeSync %d", frame->data_32[0]);
-        if(frame->dlc == 8U)
-        {
-            EDC_DataModelTimeSyncCalculate(ctrl->model, &frame->data_32[0]);
-        }
-        else
+        if(frame->dlc != 8U)
         {
             LOG_ERR("timeSync: frame format error, expect dlc = 8");
+            break;
         }
+        if(k_sem_take(&ctrl->model->ts.is_free, K_NO_WAIT) == 0)
+        {
+            k_sem_give(&ctrl->model->ts.is_free);
+            LOG_ERR("timeSync: last timeSync timeout");
+            break;
+        }
+        EDC_DataModelTimeSyncCalculate(ctrl->model, &frame->data_32[0]);
         break;
     case edc_ctrl_canMsg_driveMode:
         LOG_DBG("update driveMode %d", frame->data_32[0]);
-        if(frame->dlc == 4U)
-        {
-            update_data.modeFlag = frame->data_32[0];
-            EDC_DataModelUpdate(ctrl->model, &update_data, edc_dataFlag_modeFlag);
-            k_wakeup(ctrl->thread_id);
-        }
-        else
+        if(frame->dlc != 4U)
         {
             LOG_ERR("driveMode: frame format error, expect dlc = 4");
+            break;
         }
+        update_data.modeFlag = frame->data_32[0];
+        EDC_DataModelUpdate(ctrl->model, &update_data, edc_dataFlag_modeFlag);
+        k_wakeup(ctrl->thread_id);
         break;
     case edc_ctrl_canMsg_currSpeed:
         LOG_DBG("update currSpeed %d", frame->data_32[0]);
-        if(frame->dlc == 4U)
-        {
-            if (k_timer_remaining_get(&ctrl->ts_timer) == 0U)
-            {
-                /** timeSync not started until first currSpeed arrives */
-                LOG_DBG("got first frame, enable timeSync");
-                k_timer_start(&ctrl->ts_timer, K_MSEC(125), K_MSEC(125));
-            }
-            update_data.currentSpeed = frame->data_32[0];
-            update_data.timeStamp = k_uptime_get();
-            EDC_DataModelUpdate(ctrl->model, &update_data, edc_dataFlag_currentSpeed);
-            k_wakeup(ctrl->thread_id);
-        }
-        else
+        if(frame->dlc != 4U)
         {
             LOG_ERR("currSpeed: frame format error, expect dlc = 4");
+            break;
         }
+        if (k_timer_remaining_get(&ctrl->ts_timer) == 0U)
+        {
+            /** timeSync not started until first currSpeed arrives */
+            LOG_DBG("got first frame, enable timeSync");
+            k_timer_start(&ctrl->ts_timer, K_MSEC(125), K_MSEC(125));
+        }
+        update_data.currentSpeed = frame->data_32[0];
+        EDC_DataModelUpdate(ctrl->model, &update_data, edc_dataFlag_currentSpeed);
+        k_wakeup(ctrl->thread_id);
         break;
     default:
         break;
@@ -168,8 +167,10 @@ void EDC_CtrlTsWork(struct k_work *item)
     ret = EDC_DataModelTimeSyncPrepare(ctrl->model, &frame.data_32[0], &frame.dlc);
     if(ret)
     {
-        LOG_ERR("ts work is blocked, timer stopped [%d]", ret);
         k_timer_stop(&ctrl->ts_timer);
+        EDC_DATAMODEL_UPDATE_MEMBER(ctrl->model, timeSync.ping, -1);
+        EDC_DataModelPublish(ctrl->model);
+        k_sem_give(&ctrl->model->ts.is_free);
         return;
     }
     ret = EDC_CtrlCanBusSend(ctrl, &frame);
