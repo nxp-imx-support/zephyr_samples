@@ -1,7 +1,7 @@
 #include "comm.h"
 
 #include <zephyr/logging/log.h>
-LOG_MODULE_REGISTER(eds_control, 2U);
+LOG_MODULE_REGISTER(eds_control, CONFIG_EDS_COMM_LOG_LEVEL);
 
 struct can_filter const eds_comm_canRxFilter[] =
 {
@@ -144,7 +144,7 @@ int EDS_CommSendSequence(eds_comm_t *const comm, eds_commSeq_t const * seq)
     return -EINVAL; // should never reach here
 }
 
-#ifdef EDS_COMM_WFM_OUT
+#ifdef CONFIG_EDS_COMM_WFM_OUT
 void EDS_CommSendUartStr(eds_comm_t *const comm, char *str)
 {
 	int msg_len = strlen(str);
@@ -155,7 +155,7 @@ void EDS_CommSendUartStr(eds_comm_t *const comm, char *str)
 
 	//printk("Device %s sent: \"%s\"\n", uart->name, str);
 }
-#endif // EDS_COMM_WFM_OUT
+#endif // CONFIG_EDS_COMM_WFM_OUT
 
 void EDS_CommKineticsModelUpdate(eds_comm_t *const comm)
 {
@@ -188,7 +188,7 @@ void EDS_CommKineticsModelUpdate(eds_comm_t *const comm)
         comm->kinetics.accel_ctrl_err_intg = 0;
     }
 
-#ifdef EDS_COMM_WFM_OUT
+#ifdef CONFIG_EDS_COMM_WFM_OUT
     static char str_buf[256];
 
     snprintf(str_buf, 256,
@@ -205,7 +205,7 @@ void EDS_CommKineticsModelUpdate(eds_comm_t *const comm)
         , comm->state.curr_speed
     );
     EDS_CommSendUartStr(comm, str_buf);
-#endif // EDS_COMM_WFM_OUT
+#endif // CONFIG_EDS_COMM_WFM_OUT
 }
 
 void EDS_CommKeyInput(eds_comm_t *const comm, uint16_t keycode)
@@ -323,14 +323,14 @@ void EDS_CommTask(eds_comm_t *const comm, void* p2, void* p3)
 	frame.flags = 0U;
 #endif // CONFIG_CAN_FD_MODE
 
-#ifdef EDS_COMM_WFM_OUT
-    comm->uart_dev = DEVICE_DT_GET(DT_NODELABEL(EDS_COMM_WFM_OUT_DEVICE));
+#ifdef CONFIG_EDS_COMM_WFM_OUT
+    comm->uart_dev = DEVICE_DT_GET(DT_PROP(DT_PATH(zephyr_user), wfm_out_uart));
     if(!device_is_ready(comm->uart_dev))
     {
         LOG_ERR("uart device not ready [%d]\n", -ENODEV);
         return;
     }
-#endif // EDS_COMM_WFM_OUT
+#endif // CONFIG_EDS_COMM_WFM_OUT
 
     LOG_INF("eds comm can ok\n");
 

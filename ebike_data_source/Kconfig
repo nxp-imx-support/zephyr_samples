@@ -1,0 +1,36 @@
+# Copyright (c) 2022 Henrik Brix Andersen <henrik@brixandersen.dk>
+# SPDX-License-Identifier: Apache-2.0
+
+menu "Ebike data source demo"
+
+config EDS_CAN_FRAME_ID_BASE
+	hex "CAN ID"
+	default 0x100
+	range 0x000 0x7fd
+	help
+	  CAN frame id base. 3 CAN frame ids are used in this demo.
+
+config EDS_CAN_FD_MODE
+	bool "Send CAN-FD format frames"
+	select CAN_FD_MODE
+    default n
+	help
+	  Selects CAN_FD_MODE
+
+config EDS_COMM_WFM_OUT
+	bool "Send simulation data to draw waveform"
+	default n
+	help
+	  Send simulation data via selected uart to draw waveform
+
+module = EDS_MAIN
+module-str = ebike data source main thread
+source "subsys/logging/Kconfig.template.log_config"
+
+module = EDS_COMM
+module-str = ebike data source comm thread
+source "subsys/logging/Kconfig.template.log_config"
+
+endmenu
+
+source "Kconfig.zephyr"

@@ -18,7 +18,7 @@
     };
 
     zephyr,user {
-        //keypad_gpio_irq = <&gpio2 >
+        wfm_out_uart = <&lpuart2>;
         keypad_r_gpios = <&gpio2  5 GPIO_ACTIVE_HIGH>,
                         <&gpio2  0 GPIO_ACTIVE_HIGH>,
                         <&gpio2  3 GPIO_ACTIVE_HIGH>,

@@ -20,7 +20,7 @@
 
 #include "comm.h"
 
-LOG_MODULE_REGISTER(main, 3U);
+LOG_MODULE_REGISTER(main, CONFIG_EDS_MAIN_LOG_LEVEL);
 
 BUILD_ASSERT(DT_PROP_LEN(DT_PATH(zephyr_user), keypad_r_gpios) == 4U,
 	"keypad_gpio_r must have 4 elements");
@@ -126,7 +126,7 @@ int main(void)
 	tid_main = k_current_get();
 	struct k_timer kpScan_timer;
 
-	LOG_INF("**** ebike data source demo ****\n"
+	printk("**** ebike data source demo ****\n"
 	);
 
 	LOG_INF("spawn eds_com thread");

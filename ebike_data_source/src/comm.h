@@ -23,17 +23,17 @@
 #define EDS_COMM_THREAD_STACK_SIZE (0x4000U)
 #define EDS_COMM_WQ_STACK_SIZE (0x800U)
 
-#define EDS_COMM_WFM_OUT (1)
-#define EDS_COMM_WFM_OUT_DEVICE lpuart2
+#define CONFIG_EDS_COMM_WFM_OUT (1)
+#define CONFIG_EDS_COMM_WFM_OUT_DEVICE lpuart2
 
 typedef enum _eds_comm_msg
 {
     eds_comm_msg_sleep = 0x000,
     eds_comm_msg_abort = 0xfff,
 
-    eds_comm_msg_timeSync = 0x100,
-    eds_comm_msg_driveMode = 0x101,
-    eds_comm_msg_currSpeed = 0x102,
+    eds_comm_msg_timeSync =     CONFIG_EDS_CAN_FRAME_ID_BASE + 0,
+    eds_comm_msg_driveMode =    CONFIG_EDS_CAN_FRAME_ID_BASE + 1,
+    eds_comm_msg_currSpeed =    CONFIG_EDS_CAN_FRAME_ID_BASE + 2,
 } eds_comm_msg_t;
 
 typedef enum _eds_driveMode
@@ -79,9 +79,9 @@ typedef struct _eds_comm
     struct k_timer send_timer;
     struct k_work_q work_q;
     struct k_work ts_work; /** used for time sync */
-#ifdef EDS_COMM_WFM_OUT
+#ifdef CONFIG_EDS_COMM_WFM_OUT
     struct device const *uart_dev;
-#endif // ! EDS_COMM_WFM_OUT
+#endif // ! CONFIG_EDS_COMM_WFM_OUT
 
     struct
     {
