@@ -18,8 +18,8 @@ const char* eds_comm_drive_mode_name[] =
     "eds_driveMode_lock",
     "eds_driveMode_eco",
     "eds_driveMode_normal",
-    "eds_driveMode_sport",
     "eds_driveMode_rain",
+    "eds_driveMode_sport",
 };
 
 void EDS_CommCanBusRxCb(struct device const *const dev, struct can_frame *frame, void *userData)
@@ -213,7 +213,7 @@ void EDS_CommKeyInput(eds_comm_t *const comm, uint16_t keycode)
     k_mutex_lock(&comm->lock, K_FOREVER);
 
     if (keycode & eds_comm_keyCode_MP && !(keycode & eds_comm_keyCode_MN)
-        && comm->state.drive_mode < eds_driveMode_rain)
+        && comm->state.drive_mode < eds_driveMode_sport)
     {
         comm->state.drive_mode ++;
         LOG_DBG("drive mode +, curr %s", eds_comm_drive_mode_name[comm->state.drive_mode]);
@@ -221,7 +221,14 @@ void EDS_CommKeyInput(eds_comm_t *const comm, uint16_t keycode)
     if (keycode & eds_comm_keyCode_MN && !(keycode & eds_comm_keyCode_MP)
         && comm->state.drive_mode > eds_driveMode_off)
     {
-        comm->state.drive_mode --;
+        if(comm->state.drive_mode == eds_driveMode_eco)
+        {
+            comm->state.drive_mode -= 2;
+        }
+        else
+        {
+            comm->state.drive_mode --;
+        }
         if(comm->state.drive_mode == eds_driveMode_off)
         {
             comm->state.target_accel = 0;
@@ -231,14 +238,14 @@ void EDS_CommKeyInput(eds_comm_t *const comm, uint16_t keycode)
 
 
     if (keycode & eds_comm_keyCode_SP && !(keycode & eds_comm_keyCode_SN)
-        && comm->state.drive_mode != eds_driveMode_off
+        && comm->state.drive_mode > eds_driveMode_lock
         && comm->state.target_accel < 20000)
     {
         comm->state.target_accel += 250;
         LOG_DBG("speed +250, curr %d", comm->state.target_accel);
     }
     if (keycode & eds_comm_keyCode_SN && !(keycode & eds_comm_keyCode_SP)
-        && comm->state.drive_mode != eds_driveMode_off
+        && comm->state.drive_mode > eds_driveMode_lock
         && comm->state.target_accel != 0)
     {
         comm->state.target_accel -= 250;
