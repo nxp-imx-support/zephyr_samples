@@ -81,18 +81,18 @@ void EDC_ViewDisplayUpdate(edc_dataModelSub_t *const dm_sub)
             lv_obj_set_style_text_color(guider_ui.screen_drive_mode, lv_color_hex(0xa14242), 0);
             lv_label_set_text(guider_ui.screen_drive_mode, "LOCK");
             break;
-        case edc_driveMode_eco:
-            lv_obj_set_style_text_color(guider_ui.screen_drive_mode, lv_color_hex(0x90ee90), 0);
-            lv_label_set_text(guider_ui.screen_drive_mode, "E.C.O");
-            break;
+        //case edc_driveMode_eco:
+        //    lv_obj_set_style_text_color(guider_ui.screen_drive_mode, lv_color_hex(0x90ee90), 0);
+        //    lv_label_set_text(guider_ui.screen_drive_mode, "E.C.O");
+        //    break;
         case edc_driveMode_normal:
             lv_obj_set_style_text_color(guider_ui.screen_drive_mode, lv_color_hex(0xffffff), 0);
             lv_label_set_text(guider_ui.screen_drive_mode, "NORMAL");
             break;
-        case edc_driveMode_rain:
-            lv_obj_set_style_text_color(guider_ui.screen_drive_mode, lv_color_hex(0x00ffff), 0);
-            lv_label_set_text(guider_ui.screen_drive_mode, "RAIN");
-            break;
+        //case edc_driveMode_rain:
+        //    lv_obj_set_style_text_color(guider_ui.screen_drive_mode, lv_color_hex(0x00ffff), 0);
+        //    lv_label_set_text(guider_ui.screen_drive_mode, "RAIN");
+        //    break;
         case edc_driveMode_sport:
             lv_obj_set_style_text_color(guider_ui.screen_drive_mode, lv_color_hex(0x00bfff), 0);
             lv_label_set_text(guider_ui.screen_drive_mode, "SPORT");

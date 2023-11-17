@@ -16,9 +16,9 @@ const char* eds_comm_drive_mode_name[] =
 {
     "eds_driveMode_off",
     "eds_driveMode_lock",
-    "eds_driveMode_eco",
+    //"eds_driveMode_eco",
     "eds_driveMode_normal",
-    "eds_driveMode_rain",
+    //"eds_driveMode_rain",
     "eds_driveMode_sport",
 };
 
@@ -221,7 +221,7 @@ void EDS_CommKeyInput(eds_comm_t *const comm, uint16_t keycode)
     if (keycode & eds_comm_keyCode_MN && !(keycode & eds_comm_keyCode_MP)
         && comm->state.drive_mode > eds_driveMode_off)
     {
-        if(comm->state.drive_mode == eds_driveMode_eco)
+        if(comm->state.drive_mode == eds_driveMode_lock + 1)
         {
             comm->state.drive_mode -= 2;
         }

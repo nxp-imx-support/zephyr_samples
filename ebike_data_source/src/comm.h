@@ -40,9 +40,9 @@ typedef enum _eds_driveMode
 {
     eds_driveMode_off = 0U,
     eds_driveMode_lock, // child lock / protection
-    eds_driveMode_eco,
+    //eds_driveMode_eco,
     eds_driveMode_normal,
-    eds_driveMode_rain,
+    //eds_driveMode_rain,
     eds_driveMode_sport,
 } eds_driveMode_t;
 
