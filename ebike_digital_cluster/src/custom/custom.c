@@ -61,7 +61,7 @@ void custom_init(lv_ui *ui)
 
     /** update timeSync */
     lv_label_set_text_fmt(guider_ui.screen_date_label, "ping:N/A us");
-    lv_label_set_text_fmt(guider_ui.screen_time_label, "offset:N/A");
+    //lv_label_set_text_fmt(guider_ui.screen_time_label, "offset:N/A");
 
 }
 
@@ -121,15 +121,15 @@ void EDC_ViewDisplayUpdate(edc_dataModelSub_t *const dm_sub)
         {
             lv_label_set_text_fmt(guider_ui.screen_date_label, "ping:%3.3d us"
                 , model->data.timeSync.ping);
-            lv_label_set_text_fmt(guider_ui.screen_time_label, "diff:%+010d"
-                , model->data.timeSync.offset);
+            //lv_label_set_text_fmt(guider_ui.screen_time_label, "diff:%+010d"
+            //    , model->data.timeSync.offset);
         }
         else
         {
             lv_label_set_text_fmt(guider_ui.screen_date_label, "ping:N/A us"
                 , model->data.timeSync.ping);
-            lv_label_set_text_fmt(guider_ui.screen_time_label, "diff:N/A"
-                , model->data.timeSync.offset);
+            //lv_label_set_text_fmt(guider_ui.screen_time_label, "diff:N/A"
+            //    , model->data.timeSync.offset);
         }
 
     //}
