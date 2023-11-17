@@ -85,6 +85,7 @@ typedef struct _eds_comm
 
     struct
     {
+        bool is_demo;
         eds_driveMode_t drive_mode;
         int32_t target_accel; /** accel +/- button set nominal_accel, and then apply random swing on it */
         int32_t nominal_accel;

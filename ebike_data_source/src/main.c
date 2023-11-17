@@ -85,7 +85,7 @@ void keypad_4x4_scan(keypad_4x4_t *kp)
 	for (int i = 0; i < 4; ++i)
 	{
 		keypad_4x4_select_row(kp, BIT(i));
-		k_busy_wait(50);
+		k_busy_wait(100);
 		for (int j = 0; j < 4; ++j)
 		{
 			if(gpio_pin_get_dt(&kp->gpio_c[j]))

@@ -159,11 +159,84 @@ void EDS_CommSendUartStr(eds_comm_t *const comm, char *str)
 
 void EDS_CommKineticsModelUpdate(eds_comm_t *const comm)
 {
-    if(comm->state.drive_mode == eds_driveMode_sport)
+    static int demo_frame = 0;
+    if(comm->state.is_demo == true)
     {
-        comm->state.curr_speed = ((double)comm->state.target_accel) * 2.25;
-        return;
+        switch (demo_frame)
+        {
+        case (16):
+            comm->state.drive_mode = eds_driveMode_lock;
+            break;
+        case 24:
+            comm->state.drive_mode = eds_driveMode_normal;
+            break;
+        case 28:
+            comm->state.target_accel = 250;
+            break;
+        case 64:
+            comm->state.target_accel = 1000;
+            break;
+        case 96:
+            comm->state.target_accel = 2000;
+            break;
+        case 128:
+            comm->state.target_accel = 3000;
+            break;
+        case 152:
+            comm->state.drive_mode = eds_driveMode_sport;
+            break;
+        case 160:
+            comm->state.target_accel = 9000;
+            break;
+        case 192:
+            comm->state.target_accel = 15000;
+            break;
+        case 216:
+            comm->state.target_accel = 18000;
+            break;
+        case 240:
+            comm->state.target_accel = 20000;
+            break;
+        case 264:
+            comm->state.target_accel = 16000;
+            break;
+        case 288:
+            comm->state.target_accel = 8000;
+            break;
+        case 320:
+            comm->state.target_accel = 10000;
+            break;
+        case 384:
+            comm->state.drive_mode = eds_driveMode_normal;
+            comm->state.target_accel = 6000;
+            break;
+        case 400:
+            comm->state.target_accel = 4000;
+            break;
+        case 416:
+            comm->state.target_accel = 2000;
+            break;
+        case 432:
+            comm->state.target_accel = 0;
+            break;
+        case 464:
+            comm->state.drive_mode = eds_driveMode_off;
+            break;
+
+        }
+
+        demo_frame = (++demo_frame) % 480;
     }
+    //else if(comm->state.drive_mode == eds_driveMode_sport)
+    //{
+    //    comm->state.curr_speed = ((double)comm->state.target_accel) * 2.25;
+    //    /** let's assume accel_ctrl_err = 0 to prevent issue */
+    //    comm->kinetics.accel_ctrl_err = 0;
+    //    comm->kinetics.accel_ctrl_err_intg = 0;
+    //    comm->state.nominal_accel = comm->state.curr_speed * comm->kinetics.deccel_coeff
+    //                     + comm->state.curr_speed * comm->state.curr_speed * comm->kinetics.deccel_coeff_2;
+    //    return;
+    //}
 
     /** calculate PI controller */
     comm->kinetics.accel_ctrl_err = (comm->state.target_accel - comm->state.nominal_accel);
@@ -176,8 +249,8 @@ void EDS_CommKineticsModelUpdate(eds_comm_t *const comm)
     int32_t real_accel = comm->state.nominal_accel; //TODO use rand() to randomize this
 
     /** calculate drag deccel */
-    int32_t real_deccel = comm->state.curr_speed * comm->kinetics.deccel_coeff
-                         + comm->state.curr_speed * comm->state.curr_speed * comm->kinetics.deccel_coeff_2;
+    int32_t real_deccel = comm->kinetics.deccel_coeff * comm->state.curr_speed
+                         + comm->kinetics.deccel_coeff_2 * comm->state.curr_speed * comm->state.curr_speed;
 
     /** calculate curr_speed */
     comm->state.curr_speed = comm->state.curr_speed + real_accel - real_deccel;
@@ -186,6 +259,10 @@ void EDS_CommKineticsModelUpdate(eds_comm_t *const comm)
         comm->state.curr_speed = 0;
         comm->kinetics.accel_ctrl_err = 0;
         comm->kinetics.accel_ctrl_err_intg = 0;
+    }
+    else if(comm->state.curr_speed > 56000)
+    {
+        comm->state.curr_speed = 50000;
     }
 
 #ifdef CONFIG_EDS_COMM_WFM_OUT
@@ -211,6 +288,20 @@ void EDS_CommKineticsModelUpdate(eds_comm_t *const comm)
 void EDS_CommKeyInput(eds_comm_t *const comm, uint16_t keycode)
 {
     k_mutex_lock(&comm->lock, K_FOREVER);
+
+    if(comm->state.is_demo == true && keycode != 0)
+    {
+        comm->state.is_demo = false;
+        comm->state.drive_mode = eds_driveMode_off;
+        comm->state.target_accel = 0;
+        comm->state.nominal_accel = 0;
+        comm->state.curr_speed = 0;
+        comm->kinetics.accel_ctrl_err = 0;
+        comm->kinetics.accel_ctrl_err_intg = 0;
+        LOG_INF("demo mode exit");
+        k_mutex_unlock(&comm->lock);
+        return;
+    }
 
     if (keycode & eds_comm_keyCode_MP && !(keycode & eds_comm_keyCode_MN)
         && comm->state.drive_mode < eds_driveMode_sport)
@@ -241,14 +332,30 @@ void EDS_CommKeyInput(eds_comm_t *const comm, uint16_t keycode)
         && comm->state.drive_mode > eds_driveMode_lock
         && comm->state.target_accel < 20000)
     {
-        comm->state.target_accel += 250;
+        if(comm->state.drive_mode == eds_driveMode_sport)
+        {
+            comm->state.target_accel += 1000;
+            comm->state.target_accel -= comm->state.target_accel % 1000;
+        }
+        else
+        {
+            comm->state.target_accel += 250;
+        }
         LOG_DBG("speed +250, curr %d", comm->state.target_accel);
     }
     if (keycode & eds_comm_keyCode_SN && !(keycode & eds_comm_keyCode_SP)
         && comm->state.drive_mode > eds_driveMode_lock
         && comm->state.target_accel != 0)
     {
-        comm->state.target_accel -= 250;
+        if(comm->state.drive_mode == eds_driveMode_sport)
+        {
+            comm->state.target_accel -= 1000;
+            comm->state.target_accel -= comm->state.target_accel % 1000;
+        }
+        else
+        {
+            comm->state.target_accel -= 250;
+        }
         LOG_DBG("speed -250, curr %d", comm->state.target_accel);
     }
 
@@ -290,6 +397,7 @@ void EDS_CommTask(eds_comm_t *const comm, void* p2, void* p3)
 
     k_mutex_init(&comm->lock);
 
+    comm->state.is_demo = true;
     comm->state.drive_mode = eds_driveMode_off;
     comm->state.target_accel = 0;
     comm->state.nominal_accel = 0;
@@ -350,6 +458,7 @@ void EDS_CommTask(eds_comm_t *const comm, void* p2, void* p3)
         frame.data_32[0] = comm->state.drive_mode;
         frame.dlc = 4U;
         ret = EDS_CommCanBusSend(comm, &frame);
+        LOG_INF("send driveMode %d", comm->state.drive_mode);
 
         /** send can frame to set curr_speed */
         EDS_CommKineticsModelUpdate(comm);
@@ -357,6 +466,7 @@ void EDS_CommTask(eds_comm_t *const comm, void* p2, void* p3)
         frame.data_32[0] = comm->state.curr_speed;
         frame.dlc = 4U;
         ret = EDS_CommCanBusSend(comm, &frame);
+        LOG_INF("send currSpeed %d", comm->state.curr_speed);
 
         k_mutex_unlock(&comm->lock);
     }
