@@ -67,16 +67,13 @@ LV_IMG_DECLARE(_ebike_icn_average_speed_big_alpha_61x50);
 LV_IMG_DECLARE(_ebike_icn_distance_travelled_big_alpha_56x41);
 LV_IMG_DECLARE(_nxp_alpha_183x66);
 
-LV_FONT_DECLARE(lv_font_montserratMedium_1)
-LV_FONT_DECLARE(lv_font_montserratMedium_12)
-LV_FONT_DECLARE(lv_font_montserratMedium_112)
-LV_FONT_DECLARE(lv_font_montserratMedium_16)
-LV_FONT_DECLARE(lv_font_montserratMedium_32)
-LV_FONT_DECLARE(lv_font_simsun_32)
-LV_FONT_DECLARE(lv_font_simsun_53)
-LV_FONT_DECLARE(lv_font_montserratMedium_66)
-LV_FONT_DECLARE(lv_font_montserratMedium_26)
-LV_FONT_DECLARE(lv_font_montserratMedium_36)
+LV_FONT_DECLARE(lv_font_Amiko_Regular_1)
+LV_FONT_DECLARE(lv_font_Amiko_Regular_12)
+LV_FONT_DECLARE(lv_font_Amiko_Regular_112)
+LV_FONT_DECLARE(lv_font_Amiko_Regular_36)
+LV_FONT_DECLARE(lv_font_Amiko_Regular_32)
+LV_FONT_DECLARE(lv_font_Amiko_Regular_48)
+LV_FONT_DECLARE(lv_font_Amiko_Regular_64)
 
 
 #ifdef __cplusplus

@@ -10,6 +10,7 @@
 #include "lvgl.h"
 #include "gui_guider.h"
 #include "widgets_init.h"
+#include <stdlib.h>
 
 
 __attribute__((unused)) void kb_event_cb (lv_event_t *e) {
