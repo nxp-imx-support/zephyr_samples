@@ -51,7 +51,7 @@ void custom_init(lv_ui *ui)
     lv_obj_set_style_text_color(guider_ui.screen_drive_mode, lv_color_hex(0x909090), 0);
     lv_label_set_text(guider_ui.screen_drive_mode, "P. OFF");
     /** update currentSpeed */
-	lv_label_set_text_fmt(guider_ui.screen_speed, "00.0");
+	lv_label_set_text_fmt(guider_ui.screen_speed, "00");
     lv_meter_set_indicator_value(guider_ui.screen_meter, guider_ui.screen_meter_scale_1_ndimg_0
             , 0);
     /** update distance */
@@ -102,9 +102,8 @@ void EDC_ViewDisplayUpdate(edc_dataModelSub_t *const dm_sub)
     //if(!EDC_DATAMODEL_IS_MEMBER_EQUAL(model, modeData.driveMode))
     //{
         /** update currentSpeed */
-	    lv_label_set_text_fmt(guider_ui.screen_speed, "%2.2d.%1.1d"
-                , UINT_INTEGER_BASE_1000(model->data.currentSpeed)
-                , UINT_FRAC_BASE_1000_D1(model->data.currentSpeed));
+	    lv_label_set_text_fmt(guider_ui.screen_speed, "%2.2d"
+                , UINT_INTEGER_BASE_1000(model->data.currentSpeed));
         lv_meter_set_indicator_value(guider_ui.screen_meter, guider_ui.screen_meter_scale_1_ndimg_0
                 , model->data.currentSpeed / 100);
         /** update distance */

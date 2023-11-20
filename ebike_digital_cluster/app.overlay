@@ -10,6 +10,12 @@
         zephyr,display = &lcdif;
     };
 
+    cpus {
+		cpu@0 {
+			status = "okay";
+		};
+	};
+
     sram0: memory@80200000 {
         reg = <0x80200000 DT_SIZE_M(16)>;
     };

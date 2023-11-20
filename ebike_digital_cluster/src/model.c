@@ -39,7 +39,7 @@ void EDC_DataModelUpdate(edc_dataModel_t * const model, edc_data_t const * const
 
         if(model->shadow.modeData.driveMode != edc_driveMode_off)
         {
-            uint64_t delta_elapsedTime /** ms */ = 125; // 125ms
+            uint64_t delta_elapsedTime /** ms */ = 50; // 50ms
             uint64_t new_elapsedTime /** ms */ = model->data.elapsedTime + delta_elapsedTime;
             EDC_DATAMODEL_UPDATE_MEMBER(model, elapsedTime, new_elapsedTime);
 
