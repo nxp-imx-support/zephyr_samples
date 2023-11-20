@@ -26,6 +26,8 @@
 #define CONFIG_EDS_COMM_WFM_OUT (1)
 #define CONFIG_EDS_COMM_WFM_OUT_DEVICE lpuart2
 
+#define EDS_CAN_FRAME_INTERVAL_MS (50)
+
 typedef enum _eds_comm_msg
 {
     eds_comm_msg_sleep = 0x000,

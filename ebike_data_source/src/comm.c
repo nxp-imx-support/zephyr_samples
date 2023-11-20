@@ -164,68 +164,68 @@ void EDS_CommKineticsModelUpdate(eds_comm_t *const comm)
     {
         switch (demo_frame)
         {
-        case (16):
+        case (2000 / EDS_CAN_FRAME_INTERVAL_MS):
             comm->state.drive_mode = eds_driveMode_lock;
             break;
-        case 24:
+        case (3000 / EDS_CAN_FRAME_INTERVAL_MS):
             comm->state.drive_mode = eds_driveMode_normal;
             break;
-        case 28:
+        case (3500 / EDS_CAN_FRAME_INTERVAL_MS):
             comm->state.target_accel = 250;
             break;
-        case 64:
+        case (8000 / EDS_CAN_FRAME_INTERVAL_MS):
             comm->state.target_accel = 1000;
             break;
-        case 96:
+        case (12000 / EDS_CAN_FRAME_INTERVAL_MS):
             comm->state.target_accel = 2000;
             break;
-        case 128:
+        case (16000 / EDS_CAN_FRAME_INTERVAL_MS):
             comm->state.target_accel = 3000;
             break;
-        case 152:
+        case (19000 / EDS_CAN_FRAME_INTERVAL_MS):
             comm->state.drive_mode = eds_driveMode_sport;
             break;
-        case 160:
+        case (20000 / EDS_CAN_FRAME_INTERVAL_MS):
             comm->state.target_accel = 9000;
             break;
-        case 192:
+        case (24000 / EDS_CAN_FRAME_INTERVAL_MS):
             comm->state.target_accel = 15000;
             break;
-        case 216:
+        case (27000 / EDS_CAN_FRAME_INTERVAL_MS):
             comm->state.target_accel = 18000;
             break;
-        case 240:
+        case (30000 / EDS_CAN_FRAME_INTERVAL_MS):
             comm->state.target_accel = 20000;
             break;
-        case 264:
+        case (33000 / EDS_CAN_FRAME_INTERVAL_MS):
             comm->state.target_accel = 16000;
             break;
-        case 288:
+        case (36000 / EDS_CAN_FRAME_INTERVAL_MS):
             comm->state.target_accel = 8000;
             break;
-        case 320:
+        case (40000 / EDS_CAN_FRAME_INTERVAL_MS):
             comm->state.target_accel = 10000;
             break;
-        case 384:
+        case (48000 / EDS_CAN_FRAME_INTERVAL_MS):
             comm->state.drive_mode = eds_driveMode_normal;
             comm->state.target_accel = 6000;
             break;
-        case 400:
+        case (50000 / EDS_CAN_FRAME_INTERVAL_MS):
             comm->state.target_accel = 4000;
             break;
-        case 416:
+        case (52000 / EDS_CAN_FRAME_INTERVAL_MS):
             comm->state.target_accel = 2000;
             break;
-        case 432:
+        case (54000 / EDS_CAN_FRAME_INTERVAL_MS):
             comm->state.target_accel = 0;
             break;
-        case 464:
+        case (58000 / EDS_CAN_FRAME_INTERVAL_MS):
             comm->state.drive_mode = eds_driveMode_off;
             break;
 
         }
 
-        demo_frame = (++demo_frame) % 480;
+        demo_frame = (++demo_frame) % (60 * 1000 / EDS_CAN_FRAME_INTERVAL_MS);
     }
     //else if(comm->state.drive_mode == eds_driveMode_sport)
     //{
@@ -406,8 +406,8 @@ void EDS_CommTask(eds_comm_t *const comm, void* p2, void* p3)
     comm->kinetics.deccel_coeff = 0.00175;
     comm->kinetics.deccel_coeff_2 = 0.00001;
     comm->kinetics.accel_swing_permillage = 50;
-    comm->kinetics.accel_ctrl_kp = 0.1;
-    comm->kinetics.accel_ctrl_ki = 0.002;
+    comm->kinetics.accel_ctrl_kp = 0.04;
+    comm->kinetics.accel_ctrl_ki = 0.0005;
     comm->kinetics.accel_ctrl_err = 0;
     comm->kinetics.accel_ctrl_err_intg = 0;
 
@@ -442,7 +442,10 @@ void EDS_CommTask(eds_comm_t *const comm, void* p2, void* p3)
 
     LOG_INF("eds comm can ok\n");
 
-    k_timer_start(&comm->send_timer, K_MSEC(125), K_MSEC(125));
+    k_timer_start(&comm->send_timer,
+        K_MSEC(EDS_CAN_FRAME_INTERVAL_MS),
+        K_MSEC(EDS_CAN_FRAME_INTERVAL_MS)
+    );
 
     /** return to normal priority */
     k_thread_priority_set(k_current_get(), EDS_COMM_THREAD_PRIO);
