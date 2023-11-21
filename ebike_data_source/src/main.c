@@ -22,6 +22,7 @@
 
 LOG_MODULE_REGISTER(main, CONFIG_EDS_MAIN_LOG_LEVEL);
 
+#ifdef CONFIG_EDC_USER_INPUT
 BUILD_ASSERT(DT_PROP_LEN(DT_PATH(zephyr_user), keypad_r_gpios) == 4U,
 	"keypad_gpio_r must have 4 elements");
 const struct gpio_dt_spec keypad_gpio_r[] =
@@ -37,6 +38,7 @@ const struct gpio_dt_spec keypad_gpio_c[] =
 	DT_FOREACH_PROP_ELEM_SEP(DT_PATH(zephyr_user), keypad_c_gpios,
                                      GPIO_DT_SPEC_GET_BY_IDX, (,))
 };
+#endif // CONFIG_EDC_USER_INPUT
 
 typedef struct _keypad_4x4
 {
@@ -108,6 +110,7 @@ void keypad_4x4_scan(keypad_4x4_t *kp)
 
 k_tid_t tid_main;
 
+#ifdef CONFIG_EDC_USER_INPUT
 keypad_4x4_t keypad =
 {
 	.gpio_r = keypad_gpio_r,
@@ -115,6 +118,7 @@ keypad_4x4_t keypad =
 	.shadow = 0U,
 	.data = 0U,
 };
+#endif // CONFIG_EDC_USER_INPUT
 
 eds_comm_t eds_comm;
 K_THREAD_STACK_DEFINE(eds_comm_thread_stack, EDS_COMM_THREAD_STACK_SIZE);
@@ -144,19 +148,25 @@ int main(void)
 	k_yield();
 	LOG_INF("main thread resume");
 
+#ifdef CONFIG_EDC_USER_INPUT
 	keypad_4x4_init(&keypad);
+#endif // CONFIG_EDC_USER_INPUT
+
 	k_timer_init(&kpScan_timer, NULL, NULL);
 	k_timer_start(&kpScan_timer, K_MSEC(10), K_MSEC(10));
 
 	while (true)
 	{
+#ifdef CONFIG_EDC_USER_INPUT
 		static uint8_t key_hold_timer[16];
 		/** only enable long press for SP and SN */
 		const uint16_t key_hold_enable = eds_comm_keyCode_SP | eds_comm_keyCode_SN;
+#endif // CONFIG_EDC_USER_INPUT
 
 		/** wait for kpScan_timer to trigger scan */
 		k_timer_status_sync(&kpScan_timer);
 
+#ifdef CONFIG_EDC_USER_INPUT
 		keypad_4x4_scan(&keypad);
 		uint16_t key_pressed = (keypad.data ^ keypad.shadow) & keypad.data;
 		KEYPAD_FOREACH_KEY(key_pressed, 1, {key_hold_timer[key_pressed_i] = 0U; })
@@ -170,8 +180,8 @@ int main(void)
 				key_hold_timer[key_hold_i] = 0U;
 			}
 		})
-
 		EDS_CommKeyInput(&eds_comm, key_released);
+#endif // CONFIG_EDC_USER_INPUT
 	}
 
 	return 0;

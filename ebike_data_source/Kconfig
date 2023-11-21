@@ -17,6 +17,14 @@ config EDS_CAN_FD_MODE
 	help
 	  Selects CAN_FD_MODE
 
+
+config EDC_USER_INPUT
+	bool "enable user input"
+    default n
+	help
+	  Press any key to exit demo and use keyboard to control
+	  mode and speed manually
+
 config EDS_COMM_WFM_OUT
 	bool "Send simulation data to draw waveform"
 	default n
