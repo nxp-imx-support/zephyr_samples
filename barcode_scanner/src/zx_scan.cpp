@@ -27,7 +27,11 @@ void ZX_ScanTask(zx_scan_t *const scan, zx_scan_param_t const *const param, void
     size_t frame_size = param->width * param->height * 4;
 
     scan->frame = new uint8_t[frame_size];
-
+    if(scan->frame == nullptr)
+    {
+        LOG_ERR("frame buffer alloc fail");
+        return;
+    }
     /** release resources on exit */
     std::unique_ptr<uint8_t*, std::function<void(uint8_t**)>> frame_alloc_guard(
         &(scan->frame), [](uint8_t** ptr) { delete[] (*ptr); }
@@ -35,11 +39,23 @@ void ZX_ScanTask(zx_scan_t *const scan, zx_scan_param_t const *const param, void
 
     memset(scan->frame, 0, frame_size);
 
+    char * result_str = new char[1024];
+    uint32_t result_str_len = 0;
+    if(result_str == nullptr)
+    {
+        LOG_ERR("frame buffer alloc fail");
+        return;
+    }
+    /** release resources on exit */
+    std::unique_ptr<char*, std::function<void(char**)>> result_str_alloc_guard(
+        &(result_str), [](char** ptr) { delete[] (*ptr); }
+    );
+
     ZXing::DecodeHints hints = ZXing::DecodeHints();
-    hints.setTryHarder(false);
+    hints.setTryHarder(true);
     hints.setTryRotate(true);
     hints.setTryInvert(false);
-    hints.setTryDownscale(false);
+    hints.setTryDownscale(true);
     //hints.setIsPure(true);
 	//hints.setBinarizer(Binarizer::FixedThreshold);
     hints.setReturnErrors(true);
@@ -71,32 +87,32 @@ void ZX_ScanTask(zx_scan_t *const scan, zx_scan_param_t const *const param, void
 
         auto results = ZXing::ReadBarcodes(qr_image, hints);
 
-        LOG_DBG("scan end, results:");
+        LOG_INF("scan end, found %d result", results.size());
+
+        int result_no = 1;
 
         for (auto&& result : results)
         {
-            LOG_INF(
+            result_str_len = 0;
+            result_str_len += snprintf((result_str + result_str_len)
+            , (1024 - result_str_len),
                 "barcode found:\r\n"
-                //"Text:       \"%s\"\r\n"
-                "Bytes:      %s\r\n"
-                //"Format:     %s\r\n"
-                //"Identifier: %s\r\n"
-                //"Content:    %s\r\n"
-                "HasECI:     %s\r\n"
-                "Position:   %dx%d %dx%d %dx%d %dx%d\r\n"
-                "Rotation:   %d deg\r\n"
-                "IsMirrored: %s\r\n"
-                "IsInverted: %s\r\n"
-                //"EC Level:   %s\r\n"
-                //"Version:    %s\r\n"
-                //"Error:      %s\r\n"
-                //, result.text().c_str()
+                "Text       :\"%s\"\r\n"
+                "Bytes      :%s\r\n"
+                "Format     :%s\r\n"
+                "Identifier :%s\r\n"
+                "Content    :%s\r\n"
+                "HasECI     :%s\r\n"
+                "Position   :%dx%d %dx%d %dx%d %dx%d\r\n"
+                //, result.text(ZXing::TextMode::HRI).c_str()
+                , std::string((hints.textMode() == ZXing::TextMode::ECI ?
+                            result.bytesECI() : result.bytes()).asString()).c_str()
                 , ZXing::ToHex(
                            hints.textMode() == ZXing::TextMode::ECI ?
                             result.bytesECI() : result.bytes()).c_str()
-                //, ZXing::ToString(result.format()).c_str()
-                //, result.symbologyIdentifier().c_str()
-                //, ZXing::ToString(result.contentType()).c_str()
+                , ZXing::ToString(result.format()).c_str()
+                , result.symbologyIdentifier().c_str()
+                , ZXing::ToString(result.contentType()).c_str()
                 , result.hasECI() ? "true" : "false"
                 /** Position Group */
                     , result.position().topLeft().x, result.position().topLeft().y
@@ -104,17 +120,29 @@ void ZX_ScanTask(zx_scan_t *const scan, zx_scan_param_t const *const param, void
                     , result.position().bottomRight().x, result.position().bottomRight().y
                     , result.position().topRight().x, result.position().topRight().y
                 /** End Position */
+            );
+            result_str_len += snprintf((result_str + result_str_len)
+            , (1024 - result_str_len),
+                "Rotation   :%d deg\r\n"
+                "IsMirrored :%s\r\n"
+                "IsInverted :%s\r\n"
+                "EC Level   :%s\r\n"
+                "Version    :%s\r\n"
+                "Error      :%s\r\n"
                 , result.orientation()
                 , result.isMirrored() ? "true" : "false"
                 , result.isInverted() ? "true" : "false"
-                //, result.ecLevel().empty() ? "N/A" : result.ecLevel().c_str()
-                //, result.version().empty() ? "N/A" : result.version().c_str()
-                //, ZXing::ToString(result.error()).empty() ? "N/A"
-                //    : ZXing::ToString(result.error()).c_str()
+                , result.ecLevel().empty() ? "N/A" : result.ecLevel().c_str()
+                , result.version().empty() ? "N/A" : result.version().c_str()
+                , ZXing::ToString(result.error()).empty() ? "N/A"
+                    : ZXing::ToString(result.error()).c_str()
             );
+
+            LOG_INF("result %d\r\n: %s", result_no, result_str);
+            ++result_no;
         }
 
-        LOG_INF("scan finish");
+        LOG_DBG("scan finish");
 
         k_mutex_unlock(&scan->lock);
         //k_thread_suspend(scan->thread_id);

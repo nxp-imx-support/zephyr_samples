@@ -32,7 +32,7 @@
 
 #define ZX_SCAN_THREAD_START_PRIO (-1)
 #define ZX_SCAN_THREAD_NORMAL_PRIO (8)
-#define ZX_SCAN_THREAD_STACK_SIZE (65536)
+#define ZX_SCAN_THREAD_STACK_SIZE (0x10000)
 
 typedef struct _zx_scan_param
 {
