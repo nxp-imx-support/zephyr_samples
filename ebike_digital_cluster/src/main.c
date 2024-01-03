@@ -129,7 +129,7 @@ int main(void)
 
 	LOG_INF("main thread resume");
 	k_timer_init(&timer, NULL, NULL);
-	k_timer_start(&timer, K_USEC(33333), K_USEC(33333));
+	k_timer_start(&timer, K_USEC(20000), K_USEC(20000));
 
 	while (true)
 	{
