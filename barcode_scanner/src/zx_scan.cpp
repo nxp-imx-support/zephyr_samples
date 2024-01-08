@@ -19,19 +19,19 @@ size_t ZX_ResultFormatString(char * const result_str, size_t str_len, ZXing::Res
     result_str_len += snprintf((result_str + result_str_len)
     , (str_len - result_str_len),
         "Text       :\"%s\"\r\n"
-        "Bytes      :%s\r\n"
+        //"Bytes      :%s\r\n"
         "Format     :%s\r\n"
         "Identifier :%s\r\n"
-        "Content    :%s\r\n"
-        "HasECI     :%s\r\n"
+        //"Content    :%s\r\n"
+        //"HasECI     :%s\r\n"
         "Position   :%dx%d %dx%d %dx%d %dx%d\r\n"
         //, result.text(ZXing::TextMode::HRI).c_str()
         , std::string(result.bytes().asString()).c_str()
-        , ZXing::ToHex(result.bytes()).c_str()
+        //, ZXing::ToHex(result.bytes()).c_str()
         , ZXing::ToString(result.format()).c_str()
         , result.symbologyIdentifier().c_str()
-        , ZXing::ToString(result.contentType()).c_str()
-        , result.hasECI() ? "true" : "false"
+        //, ZXing::ToString(result.contentType()).c_str()
+        //, result.hasECI() ? "true" : "false"
         /** Position Group */
             , result.position().topLeft().x, result.position().topLeft().y
             , result.position().bottomLeft().x, result.position().bottomLeft().y
@@ -43,19 +43,19 @@ size_t ZX_ResultFormatString(char * const result_str, size_t str_len, ZXing::Res
     result_str_len += snprintf((result_str + result_str_len)
     , (str_len - result_str_len),
         "Rotation   :%d deg\r\n"
-        "IsMirrored :%s\r\n"
-        "IsInverted :%s\r\n"
+        //"IsMirrored :%s\r\n"
+        //"IsInverted :%s\r\n"
         "EC Level   :%s\r\n"
         "Version    :%s\r\n"
-        "Error      :%s\r\n"
+        //"Error      :%s\r\n"
         "\r\n"
         , result.orientation()
-        , result.isMirrored() ? "true" : "false"
-        , result.isInverted() ? "true" : "false"
+        //, result.isMirrored() ? "true" : "false"
+        //, result.isInverted() ? "true" : "false"
         , result.ecLevel().empty() ? "N/A" : result.ecLevel().c_str()
         , result.version().empty() ? "N/A" : result.version().c_str()
-        , ZXing::ToString(result.error()).empty() ? "N/A"
-            : ZXing::ToString(result.error()).c_str()
+        //, ZXing::ToString(result.error()).empty() ? "N/A"
+        //    : ZXing::ToString(result.error()).c_str()
     );
     return result_str_len;
 }

@@ -241,6 +241,13 @@ int main(void)
         /** send frame to zxing */
         if ((frame % 6) == 0 && k_mutex_lock(&zx_scan.lock, K_NO_WAIT) == 0)
         {
+            for (auto it = zx_scan.results.begin(); it < zx_scan.results.end(); ++it)
+            {
+                if (static_cast<int>(it->error().type()) != 0)
+                {
+                    it = zx_scan.results.erase(it);
+                }
+            }
             if (zx_scan.results.empty())
             {
                 if(preserve_old_result == false)
@@ -269,6 +276,8 @@ int main(void)
 
             textarea_strbuf[result_str_len] = '\0';
             lv_textarea_set_text(guider_ui.scanner_text_results, textarea_strbuf);
+            lv_textarea_set_cursor_pos(guider_ui.scanner_text_results, 0);
+
             LOG_INF("zx_scan send frame %d", frame);
             memcpy(zx_scan.frame, vbuf->buffer, vbuf->bytesused);
             zx_scan.frame_no = frame;
