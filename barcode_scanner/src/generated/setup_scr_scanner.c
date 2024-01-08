@@ -1,5 +1,5 @@
 /*
-* Copyright 2023 NXP
+* Copyright 2024 NXP
 * NXP Confidential and Proprietary. This software is owned or controlled by NXP and may only be used strictly in
 * accordance with the applicable license terms. By expressly accepting such terms or by downloading, installing,
 * activating and/or otherwise using the software, you are agreeing that you have read, and that you agree to
@@ -61,6 +61,30 @@ void setup_scr_scanner(lv_ui *ui)
 
 	//Write style for scanner_image_camera_preview, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
 	lv_obj_set_style_img_opa(ui->scanner_image_camera_preview, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+	//Write codes scanner_scan_area
+	ui->scanner_scan_area = lv_img_create(ui->scanner);
+	lv_obj_add_flag(ui->scanner_scan_area, LV_OBJ_FLAG_CLICKABLE);
+	lv_img_set_src(ui->scanner_scan_area, &_scan_area_alpha_600x600);
+	lv_img_set_pivot(ui->scanner_scan_area, 50,50);
+	lv_img_set_angle(ui->scanner_scan_area, 0);
+	lv_obj_set_pos(ui->scanner_scan_area, 145, 100);
+	lv_obj_set_size(ui->scanner_scan_area, 600, 600);
+
+	//Write style for scanner_scan_area, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+	lv_obj_set_style_img_opa(ui->scanner_scan_area, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+	//Write codes scanner_scan_bar
+	ui->scanner_scan_bar = lv_img_create(ui->scanner);
+	lv_obj_add_flag(ui->scanner_scan_bar, LV_OBJ_FLAG_CLICKABLE);
+	lv_img_set_src(ui->scanner_scan_bar, &_scan_bar_alpha_620x20);
+	lv_img_set_pivot(ui->scanner_scan_bar, 50,50);
+	lv_img_set_angle(ui->scanner_scan_bar, 0);
+	lv_obj_set_pos(ui->scanner_scan_bar, 135, 200);
+	lv_obj_set_size(ui->scanner_scan_bar, 620, 20);
+
+	//Write style for scanner_scan_bar, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+	lv_obj_set_style_img_opa(ui->scanner_scan_bar, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Update current screen layout.
 	lv_obj_update_layout(ui->scanner);
