@@ -64,6 +64,9 @@ lv_img_dsc_t img_preview_desc = {
   .data = nullptr,
 };
 
+#define TEXTAREA_BUF_SIZE (16384)
+char textarea_strbuf[TEXTAREA_BUF_SIZE];
+
 #ifdef CONFIG_BARCODE_TIME_MEASUREMENT
 /** used by time measurement */
 uint64_t stime, etime;
@@ -237,8 +240,37 @@ int main(void)
         /** send frame to zxing */
         if ((frame % 6) == 0 && k_mutex_lock(&zx_scan.lock, K_NO_WAIT) == 0)
         {
+            if (zx_scan.results.empty())
+            {
+                if(preserve_old_result == false)
+                {
+                    preserve_old_result = true;
+                    result_str_len += snprintf((textarea_strbuf + result_str_len),
+                        (TEXTAREA_BUF_SIZE - result_str_len),"no qr-code found. preserve old result.\r\n");
+                }
+            }
+            else
+            {
+                uint32_t result_no = 0;
+                result_str_len = 0;
+                preserve_old_result = false;
+                result_str_len += snprintf((textarea_strbuf + result_str_len),
+                        (TEXTAREA_BUF_SIZE - result_str_len),"scan result from frame %8.8d :\r\n", zx_scan.frame_no);
+                for (auto&& result : zx_scan.results)
+                {
+                    result_str_len += snprintf((textarea_strbuf + result_str_len),
+                        (TEXTAREA_BUF_SIZE - result_str_len),"qr-code no.%2.2d :\r\n", result_no);
+                    result_str_len += ZX_ResultFormatString(
+                        textarea_strbuf + result_str_len, TEXTAREA_BUF_SIZE - result_str_len, result);
+                    ++result_no;
+                }
+            }
+
+            textarea_strbuf[result_str_len] = '\0';
+            lv_textarea_set_text(guider_ui.scanner_text_results, textarea_strbuf);
             LOG_INF("zx_scan send frame %d", frame);
             memcpy(zx_scan.frame, vbuf->buffer, vbuf->bytesused);
+            zx_scan.frame_no = frame;
             k_condvar_signal(&zx_scan.cond);
             k_mutex_unlock(&zx_scan.lock);
         }

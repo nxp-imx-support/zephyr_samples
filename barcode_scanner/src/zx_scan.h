@@ -47,7 +47,14 @@ typedef struct _zx_scan
     k_tid_t thread_id;
 
     uint8_t * frame;
+    uint32_t frame_no;
+
+    ZXing::Results results;
 }zx_scan_t;
+
+size_t ZX_ResultFormatString(char * const result_str, size_t str_len, ZXing::Result const & result);
+
+int ZX_SendFrameIfIdle(zx_scan_t *const scan, uint8_t *frame, size_t size);
 
 void ZX_ScanTask(zx_scan_t *const scan, zx_scan_param_t const *const param, void*);
 
