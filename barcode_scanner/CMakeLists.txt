@@ -171,6 +171,8 @@ target_include_directories(app PRIVATE
     ${ZXING_HEADERS_DIR}
 )
 
+zephyr_compile_definitions(Zxing_EXPORTS)
+
 target_sources(app PRIVATE
     ${ZXING_SOURCES}
     src/main.cpp
