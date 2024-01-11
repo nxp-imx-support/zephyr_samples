@@ -82,6 +82,10 @@ void ZX_ScanTask(zx_scan_t *const scan, zx_scan_param_t const *const param, void
 {
     assert(scan);
     int32_t ret;
+#ifdef CONFIG_BARCODE_TIME_MEASUREMENT
+    /** used by time measurement */
+    uint64_t stime, etime;
+#endif // CONFIG_BARCODE_TIME_MEASUREMENT
 
     LOG_INF("zx_scan task start\n");
     scan->thread_id = k_current_get();
@@ -139,6 +143,10 @@ void ZX_ScanTask(zx_scan_t *const scan, zx_scan_param_t const *const param, void
         /** wait for frame is copied */
         k_condvar_wait(&scan->cond, &scan->lock, K_FOREVER);
 
+#ifdef CONFIG_BARCODE_TIME_MEASUREMENT
+        stime = k_cyc_to_us_near64(k_cycle_get_64());
+#endif // CONFIG_BARCODE_TIME_MEASUREMENT
+
         LOG_DBG("scan new frame");
         extern const uint8_t qr_code_array_rgb_24bit[];
         ZXing::ImageView qr_image(
@@ -163,6 +171,11 @@ void ZX_ScanTask(zx_scan_t *const scan, zx_scan_param_t const *const param, void
 //            LOG_INF("result %d\r\n: %s", result_no, result_str);
 //            ++result_no;
 //        }
+
+#ifdef CONFIG_BARCODE_TIME_MEASUREMENT
+        etime = k_cyc_to_us_near64(k_cycle_get_64());
+        LOG_WRN("zx_scan: process frame %d takes %lld us", scan->frame_no, etime - stime);
+#endif // CONFIG_BARCODE_TIME_MEASUREMENT
 
         LOG_DBG("scan finish");
 

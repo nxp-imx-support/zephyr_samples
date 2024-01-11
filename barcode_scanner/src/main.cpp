@@ -213,6 +213,11 @@ int main(void)
 	lv_task_handler();
 	//display_blanking_off(lv_disp_dev);
 
+#ifdef CONFIG_BARCODE_TIME_MEASUREMENT
+        etime = k_cyc_to_us_near64(k_cycle_get_64());
+        LOG_WRN("boot time: %lld us", k_cyc_to_us_near64(k_cycle_get_64()));
+#endif // CONFIG_BARCODE_TIME_MEASUREMENT
+
     int frame = 0;
     struct video_buffer *vbuf = nullptr, *vbuf_in_use = nullptr;
     size_t result_str_len = 0;
@@ -232,6 +237,10 @@ int main(void)
             continue;
         }
 #endif // CONFIG_BARCODE_VIDEO_FRAME_CHECK
+
+#ifdef CONFIG_BARCODE_TIME_MEASUREMENT
+        stime = k_cyc_to_us_near64(k_cycle_get_64());
+#endif // CONFIG_BARCODE_TIME_MEASUREMENT
 
         LOG_DBG("display frame %d", frame);\
 
@@ -313,7 +322,6 @@ int main(void)
 #ifdef CONFIG_BARCODE_TIME_MEASUREMENT
         etime = k_cyc_to_us_near64(k_cycle_get_64());
         LOG_WRN("ts: %lld us, mainloop: %lld us", etime, etime - stime);
-        stime = etime;
 #endif // CONFIG_BARCODE_TIME_MEASUREMENT
     }
 
