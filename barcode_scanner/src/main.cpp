@@ -207,7 +207,7 @@ int main(void)
         LOG_ERR("Unable to start capture\n");
         return 0;
     }
-    LOG_INF("****** video_stream_start succeeded ******\n\n\n\n\n");
+    LOG_INF("****** video_stream_start succeeded ******");
 
     setup_ui(&guider_ui);
    	events_init(&guider_ui);
@@ -278,7 +278,7 @@ int main(void)
             lv_textarea_set_text(guider_ui.scanner_text_results, textarea_strbuf);
             lv_textarea_set_cursor_pos(guider_ui.scanner_text_results, 0);
 
-            LOG_INF("zx_scan send frame %d", frame);
+            LOG_DBG("zx_scan send frame %d", frame);
             memcpy(zx_scan.frame, vbuf->buffer, vbuf->bytesused);
             zx_scan.frame_no = frame;
             k_condvar_signal(&zx_scan.cond);
@@ -286,7 +286,7 @@ int main(void)
         }
         else
         {
-            LOG_INF("zx_scan skip frame %d", frame);
+            LOG_DBG("zx_scan skip frame %d", frame);
         }
 
         /** send frame to lvgl */
@@ -308,23 +308,23 @@ int main(void)
 
         vbuf_in_use = vbuf;
         frame++;
-        LOG_DBG("** exit frame %d process **", frame);
+        LOG_INF("** exit frame %d process **", frame);
 
         //lv_task_handler();
         lv_refr_now(NULL);
 
 #ifdef CONFIG_BARCODE_TIME_MEASUREMENT
         etime = k_cyc_to_us_near64(k_cycle_get_64());
-        LOG_ERR("ts: %lld us, mainloop: %lld us", etime, etime - stime);
+        LOG_WRN("ts: %lld us, mainloop: %lld us", etime, etime - stime);
         stime = etime;
 #endif // CONFIG_BARCODE_TIME_MEASUREMENT
     }
 
     if (video_stream_stop(video_dev)) {
         LOG_ERR("Unable to stop capture\n");
-        //return 0;
+        return 0;
     }
-    LOG_INF("****** video_stream_stop succeeded ******\n");
+    LOG_INF("****** video_stream_stop succeeded ******");
 
     return 0;
 }
