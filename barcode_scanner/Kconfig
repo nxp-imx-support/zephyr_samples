@@ -1,0 +1,28 @@
+# Copyright 2024, NXP
+# SPDX-License-Identifier: Apache-2.0
+
+menu "Barcode scanner demo"
+
+config BARCODE_TIME_MEASUREMENT
+	bool "measure main thread execution time"
+	default n
+	help
+	  measure main thread execution time
+
+config BARCODE_VIDEO_FRAME_CHECK
+	bool "check for empty video frame"
+	default n
+	help
+	  check for empty video frame
+
+module = BARCODE_MAIN
+module-str = barcode scanner main thread
+source "subsys/logging/Kconfig.template.log_config"
+
+module = BARCODE_ZXING
+module-str = barcode scanner zxing thread
+source "subsys/logging/Kconfig.template.log_config"
+
+endmenu
+
+source "Kconfig.zephyr"

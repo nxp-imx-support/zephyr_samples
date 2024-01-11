@@ -11,7 +11,7 @@
 #include <functional>
 
 #include <zephyr/logging/log.h>
-LOG_MODULE_REGISTER(zx_scan, LOG_LEVEL_ERR);
+LOG_MODULE_REGISTER(zx_scan, CONFIG_BARCODE_ZXING_LOG_LEVEL);
 
 size_t ZX_ResultFormatString(char * const result_str, size_t str_len, ZXing::Result const & result)
 {

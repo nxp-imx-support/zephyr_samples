@@ -31,10 +31,7 @@
 
 
 #include <zephyr/logging/log.h>
-LOG_MODULE_REGISTER(main_tr, LOG_LEVEL_INF);
-
-#define CONFIG_BARCODE_TIME_MEASUREMENT
-#define CONFIG_BARCODE_VIDEO_FRAME_CHECK
+LOG_MODULE_REGISTER(main_tr, CONFIG_BARCODE_MAIN_LOG_LEVEL);
 
 const struct device *video_dev = DEVICE_DT_GET_ONE(nxp_imx_isi);
 struct video_buffer *my_video_buffer_pool[5];
