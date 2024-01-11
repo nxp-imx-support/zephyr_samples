@@ -169,12 +169,22 @@ set (ZXING_SOURCES
 
 target_include_directories(app PRIVATE
     ${ZXING_HEADERS_DIR}
+    src/generated
+    src/custom
+    src/generated/guider_customer_fonts
+    src/generated/guider_fonts
+    src/generated/images
 )
 
-zephyr_compile_definitions(Zxing_EXPORTS)
+target_compile_definitions(app PRIVATE Zxing_EXPORTS)
+
+FILE(GLOB gui_guider_sources src/*.c src/generated/*.c src/custom/*.c src/generated/guider_customer_fonts/*.c src/generated/guider_fonts/*.c src/generated/images/*.c)
 
 target_sources(app PRIVATE
     ${ZXING_SOURCES}
+    ${gui_guider_sources}
     src/main.cpp
     src/zx_scan.cpp
 )
+
+target_compile_definitions(app PRIVATE LV_LVGL_H_INCLUDE_SIMPLE)

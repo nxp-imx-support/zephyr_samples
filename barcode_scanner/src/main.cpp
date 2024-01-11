@@ -17,11 +17,16 @@
 /** C STD include group */
 #include <cinttypes>
 #include <cstring>
+#include <cstdio>
+#include <cstring>
 
 /** CPP STD/STL include group */
 #include <vector>
 
 #include "zx_scan.h"
+#include <lvgl.h>
+#include "../generated/gui_guider.h"
+#include "../generated/events_init.h"
 
 
 #include <zephyr/logging/log.h>
@@ -43,6 +48,20 @@ zx_scan_param_t zx_param =
     .height = 720,
 };
 zx_scan_t zx_scan;
+
+lv_ui guider_ui;
+
+lv_img_dsc_t img_preview_desc = {
+    .header = {
+        .cf = LV_IMG_CF_TRUE_COLOR_ALPHA,
+        .always_zero = 0,
+        .reserved = 0,
+        .w = 810,
+        .h = 720,
+    },
+  .data_size = 810 * 720 * 4,
+  .data = nullptr,
+};
 
 #ifdef CONFIG_BARCODE_TIME_MEASUREMENT
 /** used by time measurement */
@@ -165,6 +184,10 @@ int main(void)
 
     disp_dev_config(lv_disp_dev, &buf_desc);
 
+    /** we use board-level backlight control */
+    board_enable_backlight();
+    //display_blanking_off(lv_disp_dev);
+
     k_thread_create(&zx_scan_thread, zx_scan_thread_stack,
         ZX_SCAN_THREAD_STACK_SIZE,
         (k_thread_entry_t)ZX_ScanTask, (void*)&zx_scan, (void*)&zx_param, NULL,
@@ -177,6 +200,13 @@ int main(void)
         return 0;
     }
     LOG_INF("****** video_stream_start succeeded ******\n\n\n\n\n");
+
+    setup_ui(&guider_ui);
+   	events_init(&guider_ui);
+    lv_img_set_src(guider_ui.scanner_image_camera_preview, &img_preview_desc);
+
+	lv_task_handler();
+	//display_blanking_off(lv_disp_dev);
 
     int frame = 0;
     struct video_buffer *vbuf = nullptr, *vbuf_in_use = nullptr;
@@ -204,6 +234,11 @@ int main(void)
             LOG_INF("zx_scan skip frame %d", frame);
         }
 
+        /** send frame to lvgl */
+        img_preview_desc.data = vbuf->buffer;
+        lv_img_set_src(guider_ui.scanner_image_camera_preview, &img_preview_desc);
+        //lv_obj_invalidate(guider_ui.scanner_image_camera_preview);
+
         if (vbuf_in_use != nullptr)
         {
             if (video_enqueue(video_dev, VIDEO_EP_OUT, vbuf_in_use)) {
@@ -215,6 +250,9 @@ int main(void)
         vbuf_in_use = vbuf;
         frame++;
         LOG_DBG("** exit frame %d process **", frame);
+
+        //lv_task_handler();
+        lv_refr_now(NULL);
 
 #ifdef CONFIG_BARCODE_TIME_MEASUREMENT
         etime = k_cyc_to_us_near64(k_cycle_get_64());
