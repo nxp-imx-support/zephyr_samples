@@ -32,6 +32,16 @@ struct video_buffer *my_video_buffer_pool[5];
 
 const struct device *lv_disp_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_display));
 
+K_THREAD_STACK_DEFINE(zx_scan_thread_stack, ZX_SCAN_THREAD_STACK_SIZE);
+struct k_thread zx_scan_thread;
+zx_scan_param_t zx_param =
+{
+    .prio_normal = ZX_SCAN_THREAD_NORMAL_PRIO,
+    .width = 810,
+    .height = 720,
+};
+zx_scan_t zx_scan;
+
 void board_enable_backlight(void)
 {
     const uint8_t cmd_data[] = {0x0d, 0xbf};
@@ -148,6 +158,13 @@ int main(void)
 
     disp_dev_config(lv_disp_dev, &buf_desc);
 
+    k_thread_create(&zx_scan_thread, zx_scan_thread_stack,
+        ZX_SCAN_THREAD_STACK_SIZE,
+        (k_thread_entry_t)ZX_ScanTask, (void*)&zx_scan, (void*)&zx_param, NULL,
+        ZX_SCAN_THREAD_START_PRIO, 0, K_NO_WAIT
+    );
+    k_yield();
+
     if (video_stream_start(video_dev)) {
         LOG_ERR("Unable to start capture\n");
         return 0;
@@ -166,6 +183,19 @@ int main(void)
         }
 
         LOG_DBG("display frame %d", frame);\
+
+        /** send frame to zxing */
+        if ((frame % 6) == 0 && k_mutex_lock(&zx_scan.lock, K_NO_WAIT) == 0)
+        {
+            LOG_INF("zx_scan send frame %d", frame);
+            memcpy(zx_scan.frame, vbuf->buffer, vbuf->bytesused);
+            k_condvar_signal(&zx_scan.cond);
+            k_mutex_unlock(&zx_scan.lock);
+        }
+        else
+        {
+            LOG_INF("zx_scan skip frame %d", frame);
+        }
 
         if (vbuf_in_use != nullptr)
         {
