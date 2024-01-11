@@ -33,6 +33,7 @@
 LOG_MODULE_REGISTER(main_tr, LOG_LEVEL_INF);
 
 #define CONFIG_BARCODE_TIME_MEASUREMENT
+#define CONFIG_BARCODE_VIDEO_FRAME_CHECK
 
 const struct device *video_dev = DEVICE_DT_GET_ONE(nxp_imx_isi);
 struct video_buffer *my_video_buffer_pool[5];
@@ -177,6 +178,9 @@ int main(void)
             LOG_ERR("Unable to alloc video buffer %d", i);
             return 0;
         }
+#ifdef CONFIG_BARCODE_VIDEO_FRAME_CHECK
+        ((uint32_t*)my_video_buffer_pool[i]->buffer)[0] = 0x00f0f0f0;
+#endif // CONFIG_BARCODE_VIDEO_FRAME_CHECK
         video_enqueue(video_dev, VIDEO_EP_OUT, my_video_buffer_pool[i]);
         LOG_INF("frame buffers[%d]/%d, 0x%8.8p", i, ARRAY_SIZE(my_video_buffer_pool),
             (void *)my_video_buffer_pool[i]->buffer);
@@ -219,6 +223,15 @@ int main(void)
             break;
         }
 
+#ifdef CONFIG_BARCODE_VIDEO_FRAME_CHECK
+        if(((uint32_t*)vbuf->buffer)[0] == 0x00f0f0f0)
+        {
+            LOG_ERR("frame invalid, skipped");
+            video_enqueue(video_dev, VIDEO_EP_OUT, vbuf);
+            continue;
+        }
+#endif // CONFIG_BARCODE_VIDEO_FRAME_CHECK
+
         LOG_DBG("display frame %d", frame);\
 
         /** send frame to zxing */
@@ -241,6 +254,9 @@ int main(void)
 
         if (vbuf_in_use != nullptr)
         {
+#ifdef CONFIG_BARCODE_VIDEO_FRAME_CHECK
+            ((uint32_t*)vbuf_in_use->buffer)[0] = 0x00f0f0f0;
+#endif // CONFIG_BARCODE_VIDEO_FRAME_CHECK
             if (video_enqueue(video_dev, VIDEO_EP_OUT, vbuf_in_use)) {
                 LOG_ERR("Unable to enqueue video buf\n");
                 break;
