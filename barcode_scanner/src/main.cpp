@@ -27,6 +27,8 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(main_tr, LOG_LEVEL_INF);
 
+#define CONFIG_BARCODE_TIME_MEASUREMENT
+
 const struct device *video_dev = DEVICE_DT_GET_ONE(nxp_imx_isi);
 struct video_buffer *my_video_buffer_pool[5];
 
@@ -41,6 +43,11 @@ zx_scan_param_t zx_param =
     .height = 720,
 };
 zx_scan_t zx_scan;
+
+#ifdef CONFIG_BARCODE_TIME_MEASUREMENT
+/** used by time measurement */
+uint64_t stime, etime;
+#endif // CONFIG_BARCODE_TIME_MEASUREMENT
 
 void board_enable_backlight(void)
 {
@@ -208,6 +215,12 @@ int main(void)
         vbuf_in_use = vbuf;
         frame++;
         LOG_DBG("** exit frame %d process **", frame);
+
+#ifdef CONFIG_BARCODE_TIME_MEASUREMENT
+        etime = k_cyc_to_us_near64(k_cycle_get_64());
+        LOG_ERR("ts: %lld us, mainloop: %lld us", etime, etime - stime);
+        stime = etime;
+#endif // CONFIG_BARCODE_TIME_MEASUREMENT
     }
 
     if (video_stream_stop(video_dev)) {
