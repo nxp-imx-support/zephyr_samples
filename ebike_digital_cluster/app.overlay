@@ -35,7 +35,7 @@
 };
 
 &lcdif {
-	pixel-format = "rgb-888";
+	pixel-format = "argb-8888";
 	status = "okay";
 };
 

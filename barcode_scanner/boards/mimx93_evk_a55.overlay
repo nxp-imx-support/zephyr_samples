@@ -1,0 +1,57 @@
+/*
+ * Copyright 2024, NXP
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/delete-node/ &sram0;
+
+/{
+	chosen{
+		zephyr,console = &lpuart1;
+		zephyr,shell-uart = &lpuart1;
+		zephyr,code-partition = &sram0;
+		zephyr,sram = &sram1;
+		zephyr,display = &lcdif;
+	};
+
+	sram0: memory@80200000 {
+		reg = <0x80200000 DT_SIZE_M(8)>;
+	};
+
+	sram1: memory@80a00000 {
+		reg = <0x80a00000 DT_SIZE_M(1792)>;
+	};
+
+	dummy_disp: dummy_disp {
+		compatible = "zephyr,dummy-dc";
+		height = <800>;
+		width = <1280>;
+		status = "okay";
+	};
+};
+
+&lpuart1 {
+	current-speed = <1500000>;
+};
+
+&media_blk_ctrl {
+	status = "okay";
+};
+
+&ldb {
+	status = "okay";
+
+	lvds_panel: lvds_panel {
+		status = "okay";
+	};
+};
+
+&lcdif {
+	pixel-format = "argb-8888";
+	status = "okay";
+};
+
+&isi {
+	status = "okay";
+};
