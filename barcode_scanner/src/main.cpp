@@ -27,6 +27,7 @@
 #include <lvgl.h>
 #include "../generated/gui_guider.h"
 #include "../generated/events_init.h"
+#include "../custom/custom.h"
 
 
 #include <zephyr/logging/log.h>
@@ -283,6 +284,7 @@ int main(void)
         img_preview_desc.data = vbuf->buffer;
         lv_img_set_src(guider_ui.scanner_image_camera_preview, &img_preview_desc);
         //lv_obj_invalidate(guider_ui.scanner_image_camera_preview);
+        update_scan_anim(&guider_ui);
 
         if (vbuf_in_use != nullptr)
         {
