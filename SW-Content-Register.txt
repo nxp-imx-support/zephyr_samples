@@ -3,12 +3,12 @@ NXP Software Content Register
 Package:                    zephyr_samples
 Version:                    0.1.0
 Date:                       March 2024
-Outgoing License:           LA_OPT_NXP_Software
+Outgoing License:           LA_OPT_NXP_Software_License v56 April 2024 - Additional distribution license granted - Section 2.3 applies
 License File:               LICENSE
 Package Category:           Demo application
 Type of content:            Source code
 Description and comments:   Zephyr RTOS demo projects that can run on i.MX devices
 Release Location:           https://github.com/nxp-imx-support/zephyr_samples
-Origin:                     NXP (LA_OPT_NXP_Software)
+Origin:                     NXP (LA_OPT_NXP_Software_License v56 April 2024 - Additional distribution license granted - Section 2.3 applies)
                             NXP Gui-Guider (NXP Proprietary) https://www.nxp.com/design/design-center/software/development-software/gui-guider:GUI-GUIDER
                             zxing-cpp (Apache-2.0) https://github.com/zxing-cpp/zxing-cpp

@@ -1,3 +1,9 @@
+/*
+ * Copyright 2023-2024 NXP
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #ifndef __EDS_COMM_H_
 #define __EDS_COMM_H__
 

@@ -1,5 +1,8 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2020-2023 NXP
+/*
+ * Copyright 2020-2023 NXP
+ *
+ * SPDX-License-Identifier: MIT
+ */
 #ifndef GUIDER_FONTS_H
 #define GUIDER_FONTS_H
 #ifdef __cplusplus

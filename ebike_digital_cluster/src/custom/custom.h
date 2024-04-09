@@ -1,12 +1,8 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2020 NXP
-
 /*
- * custom.h
- *
- *  Created on: July 29, 2020
- *      Author: nxf53801
- */
+* Copyright 2023-2024 NXP
+*
+* SPDX-License-Identifier: MIT
+*/
 
 #ifndef __CUSTOM_H_
 #define __CUSTOM_H_
