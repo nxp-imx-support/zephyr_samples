@@ -16,7 +16,7 @@ To setup Zephyr project, refer to [Getting Started Guide - Zephyr Project Docume
 Note that when running `west init ~/zephyrproject` command, use the following command instead:
 
 ```shell
-$ west init -m https://github.com/nxp-imx-support/zephyr --mr v3.5.0-mx93-0 ~/zephyrproject
+$ west init -m https://github.com/nxp-zephyr/zephyr --mr gh-release/imx93_zephyr_poc ~/zephyrproject
 ```
 
 Other steps are the same.
@@ -26,9 +26,7 @@ Other steps are the same.
 To build a demo app, first clone this repository under `~/zephyrproject` :
 
 ```shell
-$ git clone https://github.com/nxp-imx-support/zephyr_samples
-$ cd zephyr_samples
-$ git checkout refs/tags/v3.5.0-mx93-0
+$ git clone -b gh-release/imx93_zephyr_poc --single-branch https://github.com/nxp-imx-support/zephyr_samples.git
 ```
 
 Then build with following commands:
@@ -78,8 +76,6 @@ $ west build -b mimx93_evk_a55 ../zephyr_samples/barcode_scanner
 
 Create bootable SD cand with `mkimage` and `dd`, then boot from it.
 
-
-
 ### E-bike Digital Cluster
 
 The ebike digital cluster demo include 2 projects: [ebike_digital_cluster](./ebike_digital_cluster) and [ebike_data_source](./ebike_data_source/). It displays a demo instrument panel of an E-bike on an LVDS display, receives status data via CAN network and update the instrument panel.
@@ -104,12 +100,6 @@ $ west build -b mimx93_evk_a55 ../zephyr_samples/ebike_ebike_cluster
 
 Create bootable SD cand with `mkimage` and `dd`, then boot from it.
 
-
-
 ## License
 
 This repository is licensed under LA_OPT_NXP_Software_License License.
-
-
-
-
