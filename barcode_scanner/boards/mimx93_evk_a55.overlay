@@ -32,7 +32,7 @@
 };
 
 &lpuart1 {
-	current-speed = <1500000>;
+	current-speed = <115200>;
 };
 
 &media_blk_ctrl {

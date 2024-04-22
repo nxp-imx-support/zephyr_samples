@@ -58,7 +58,7 @@ The mkimage writes bootable binary to `$MKIMAGE/iMX9/flash.bin` . Write the bina
 $ dd if=$MKIMAGE/iMX9/flash.bin of=/dev/sdX bs=1k seek=32 conv=fsync
 ```
 
-Insert SD card to the board, boot from SD card to run Zephyr demo. The Zephyr shell can be accessed via LPUART1 with setting of `1500000-8-1-0-0` . If connect via on-board debug USB to UART bridge, select 3rd COM/TTY device on the host.
+Insert SD card to the board, boot from SD card to run Zephyr demo. The Zephyr shell can be accessed via LPUART1 with setting of `115200-8-1-0-0` . If connect via on-board debug USB to UART bridge, select 3rd COM/TTY device on the host.
 
 ## Demo list
 

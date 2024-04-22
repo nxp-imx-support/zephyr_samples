@@ -39,6 +39,10 @@
     output-high;
 };
 
+&lpuart1 {
+	current-speed = <115200>;
+};
+
 &lpuart2 {
     current-speed = <1500000>;
 };
