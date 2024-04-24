@@ -144,11 +144,11 @@ Create bootable SD cand with `mkimage` and `dd`, then boot from it.
 
 When the demo runs correctly, we will see the following interfaces.
 ![picture](images/barcode_scanner.png)
-![picture](images/digital_cluster.png)
 
 #### E-bike Digital Cluster
 
 When the demo runs correctly, we will see the following interfaces.
+![picture](images/digital_cluster.png)
 
 ## 5. FAQs<a name="step5"></a>
 
