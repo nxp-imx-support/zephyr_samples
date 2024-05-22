@@ -42,7 +42,6 @@ typedef struct
 	lv_obj_t *screen_label_14;
 	lv_obj_t *screen_label_18;
 	lv_obj_t *screen_label_19;
-	lv_obj_t *screen_img_1;
 	lv_obj_t *screen_label_0;
 	lv_obj_t *screen_label_10;
 	lv_obj_t *screen_label_20;
@@ -66,7 +65,6 @@ LV_IMG_DECLARE(_ebike_gauge_battery_alpha_40x35);
 LV_IMG_DECLARE(_info_h_alpha_8x352);
 LV_IMG_DECLARE(_ebike_icn_average_speed_big_alpha_61x50);
 LV_IMG_DECLARE(_ebike_icn_distance_travelled_big_alpha_56x41);
-LV_IMG_DECLARE(_nxp_alpha_183x66);
 
 LV_FONT_DECLARE(lv_font_Amiko_Regular_1)
 LV_FONT_DECLARE(lv_font_Amiko_Regular_12)

@@ -432,18 +432,6 @@ void setup_scr_screen(lv_ui *ui)
 	lv_obj_set_style_pad_left(ui->screen_label_19, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_shadow_width(ui->screen_label_19, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
-	//Write codes screen_img_1
-	ui->screen_img_1 = lv_img_create(ui->screen);
-	lv_obj_add_flag(ui->screen_img_1, LV_OBJ_FLAG_CLICKABLE);
-	lv_img_set_src(ui->screen_img_1, &_nxp_alpha_183x66);
-	lv_img_set_pivot(ui->screen_img_1, 50,50);
-	lv_img_set_angle(ui->screen_img_1, 0);
-	lv_obj_set_pos(ui->screen_img_1, 1026, 130);
-	lv_obj_set_size(ui->screen_img_1, 183, 66);
-
-	//Write style for screen_img_1, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
-	lv_obj_set_style_img_opa(ui->screen_img_1, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
-
 	//Write codes screen_label_0
 	ui->screen_label_0 = lv_label_create(ui->screen);
 	lv_label_set_text(ui->screen_label_0, "0");
