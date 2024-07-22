@@ -26,7 +26,7 @@ Furthermore, the lightweight nature of Zephyr RTOS is also evident in these demo
 
 ## 1. Software<a name="step1"></a>
 
-- [Zephyr](https://github.com/nxp-zephyr/zephyr/tree/gh-release/imx93_zephyr_poc)
+- [Zephyr](https://github.com/nxp-upstream/zephyr/tree/gh-release/imx93_zephyr_poc)
 
 Zephyr is an operating system that includes a HAL component.
 
@@ -59,7 +59,7 @@ To setup Zephyr project, refer to [Getting Started Guide - Zephyr Project Docume
 Note that when running `west init ~/zephyrproject` command, use the following command instead:
 
 ```shell
-$ west init -m https://github.com/nxp-zephyr/zephyr -mr gh-release/imx93_zephyr_poc ~/zephyrproject
+$ west init -m https://github.com/nxp-upstream/zephyr -mr gh-release/imx93_zephyr_poc ~/zephyrproject
 ```
 
 Other steps are the same.
