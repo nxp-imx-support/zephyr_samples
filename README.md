@@ -5,8 +5,8 @@
 [![License badge](https://img.shields.io/badge/License-Apache%202.0-red)](./Apache-2.0.txt)
 [![Board badge](https://img.shields.io/badge/Board-MCIMX93&ndash;EVK-blue)](https://github.com/search?q=org%3Anxp-appcodehub+MCIMX93-EVK+in%3Areadme&type=Repositories)
 [![Board badge](https://img.shields.io/badge/Board-MCIMX93&ndash;QSB-blue)](https://github.com/search?q=org%3Anxp-appcodehub+MCIMX93-QSB+in%3Areadme&type=Repositories)
-[![Category badge](https://img.shields.io/badge/Category-HMI-yellowgreen)](https://github.com/search?q=org%3Anxp-appcodehub+hmi+in%3Areadme&type=Repositories) 
-[![Category badge](https://img.shields.io/badge/Category-GRAPHICS-yellowgreen)](https://github.com/search?q=org%3Anxp-appcodehub+graphics+in%3Areadme&type=Repositories) 
+[![Category badge](https://img.shields.io/badge/Category-HMI-yellowgreen)](https://github.com/search?q=org%3Anxp-appcodehub+hmi+in%3Areadme&type=Repositories)
+[![Category badge](https://img.shields.io/badge/Category-GRAPHICS-yellowgreen)](https://github.com/search?q=org%3Anxp-appcodehub+graphics+in%3Areadme&type=Repositories)
 [![Category badge](https://img.shields.io/badge/Category-RTOS-yellowgreen)](https://github.com/search?q=org%3Anxp-appcodehub+rtos+in%3Areadme&type=Repositories)
 [![Peripheral badge](https://img.shields.io/badge/Peripheral-DISPLAY-yellow)](https://github.com/search?q=org%3Anxp-appcodehub+display+in%3Areadme&type=Repositories)
 
@@ -20,7 +20,7 @@ Furthermore, the lightweight nature of Zephyr RTOS is also evident in these demo
 2. [Hardware](#step2)
 3. [Setup](#step3)
 4. [Results](#step4)
-5. [FAQs](#step5) 
+5. [FAQs](#step5)
 6. [Support](#step6)
 7. [Release Notes](#step7)
 
@@ -59,7 +59,7 @@ To setup Zephyr project, refer to [Getting Started Guide - Zephyr Project Docume
 Note that when running `west init ~/zephyrproject` command, use the following command instead:
 
 ```shell
-$ west init -m https://github.com/nxp-upstream/zephyr -mr gh-release/imx93_zephyr_poc ~/zephyrproject
+$ west init -m https://github.com/nxp-upstream/zephyr --mr gh-release/imx93_zephyr_poc ~/zephyrproject
 ```
 
 Other steps are the same.

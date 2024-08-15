@@ -20,7 +20,7 @@ These are Zephyr RTOS demo projects that can run on i.MX93 MPU, namely Digital C
 2. [Hardware](#step2)
 3. [Setup](#step3)
 4. [Results](#step4)
-5. [FAQs](#step5) 
+5. [FAQs](#step5)
 6. [Support](#step6)
 7. [Release Notes](#step7)
 
@@ -49,7 +49,7 @@ To setup Zephyr project, refer to [Getting Started Guide - Zephyr Project Docume
 Note that when running `west init ~/zephyrproject` command, use the following command instead:
 
 ```shell
-$ west init -m https://github.com/nxp-zephyr/zephyr -mr gh-release/imx93_zephyr_poc ~/zephyrproject
+$ west init -m https://github.com/nxp-zephyr/zephyr --mr gh-release/imx93_zephyr_poc ~/zephyrproject
 ```
 
 Other steps are the same.
