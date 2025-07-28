@@ -1,0 +1,23 @@
+/*
+ * Copyright 2024,2025 NXP
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/delete-node/ &dram;
+
+/{
+	chosen{
+		zephyr,console = &lpuart1;
+		zephyr,shell-uart = &lpuart1;
+	};
+
+	dram: memory@d0000000 {
+		reg = <0xd0000000 DT_SIZE_M(512)>;
+	};
+};
+
+&lpuart1 {
+	current-speed = <115200>;
+	status = "okay";
+};
