@@ -1,5 +1,5 @@
 /*
-* Copyright 2024 NXP
+* Copyright 2024,2025 NXP
 * NXP Proprietary. This software is owned or controlled by NXP and may only be used strictly in
 * accordance with the applicable license terms. By expressly accepting such terms or by downloading, installing,
 * activating and/or otherwise using the software, you are agreeing that you have read, and that you agree to
@@ -18,7 +18,6 @@ extern "C" {
 
 void events_init(lv_ui *ui);
 
-void events_init_scanner(lv_ui *ui);
 
 #ifdef __cplusplus
 }

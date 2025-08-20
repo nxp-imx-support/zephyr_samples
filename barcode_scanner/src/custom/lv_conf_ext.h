@@ -1,5 +1,5 @@
 /*
-* Copyright 2024, NXP
+* Copyright 2024,2025 NXP
 * NXP Proprietary. This software is owned or controlled by NXP and may only be used strictly in
 * accordance with the applicable license terms. By expressly accepting such terms or by downloading, installing,
 * activating and/or otherwise using the software, you are agreeing that you have read, and that you agree to
@@ -9,7 +9,6 @@
 
 /*
  * lv_conf_ext.h for custom lvconf file.
- * Created on: Feb 8, 2023
  * example :
  *	#undef LV_FONT_FMT_TXT_LARGE
  *  #define LV_FONT_FMT_TXT_LARGE 1
@@ -34,9 +33,9 @@
 /* code for board begin */
 
 
-/* code for board end */
+/* code for board end */	
 #endif
 
 
 
-#endif  /* LV_CONF_EXT_H */
+#endif  /* LV_CONF_EXT_H */	
