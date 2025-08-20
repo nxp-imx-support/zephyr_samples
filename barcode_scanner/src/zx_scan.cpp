@@ -1,5 +1,5 @@
 /*
- * Copyright 2024, NXP
+ * Copyright 2024,2025 NXP
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -18,13 +18,14 @@ size_t ZX_ResultFormatString(char * const result_str, size_t str_len, ZXing::Res
     size_t result_str_len = 0;
     result_str_len += snprintf((result_str + result_str_len)
     , (str_len - result_str_len),
-        "Text       :\"%s\"\r\n"
-        //"Bytes      :%s\r\n"
-        "Format     :%s\r\n"
-        "Identifier :%s\r\n"
-        //"Content    :%s\r\n"
-        //"HasECI     :%s\r\n"
-        "Position   :%dx%d %dx%d %dx%d %dx%d\r\n"
+        "  Text       :\"%s\"\n"
+        //"  Bytes      :%s\n"
+        "  Format     :%s\n"
+        "  Identifier :%s\n"
+        //"  Content    :%s\n"
+        //"  HasECI     :%s\n"
+        "  Position   :%3.3dx%3.3d %3.3dx%3.3d\n"
+        "              %3.3dx%3.3d %3.3dx%3.3d\n"
         //, result.text(ZXing::TextMode::HRI).c_str()
         , std::string(result.bytes().asString()).c_str()
         //, ZXing::ToHex(result.bytes()).c_str()
@@ -42,13 +43,12 @@ size_t ZX_ResultFormatString(char * const result_str, size_t str_len, ZXing::Res
     if (result_str_len < str_len)
     result_str_len += snprintf((result_str + result_str_len)
     , (str_len - result_str_len),
-        "Rotation   :%d deg\r\n"
-        //"IsMirrored :%s\r\n"
-        //"IsInverted :%s\r\n"
-        "EC Level   :%s\r\n"
-        "Version    :%s\r\n"
-        //"Error      :%s\r\n"
-        "\r\n"
+        "  Rotation   :%d deg\n"
+        //"  IsMirrored :%s\n"
+        //"  IsInverted :%s\n"
+        "  EC Level   :%s\n"
+        "  Version    :%s\n"
+        //"  Error      :%s\n"
         , result.orientation()
         //, result.isMirrored() ? "true" : "false"
         //, result.isInverted() ? "true" : "false"
@@ -60,21 +60,18 @@ size_t ZX_ResultFormatString(char * const result_str, size_t str_len, ZXing::Res
     return result_str_len;
 }
 
-int ZX_SendFrameIfIdle(zx_scan_t *const scan, uint8_t *frame, size_t size)
+int ZX_SendFrame(zx_scan_t *const scan, uint32_t frame_no, uint8_t *frame_buf, size_t frame_size)
 {
-    if (k_mutex_lock(&scan->lock, K_NO_WAIT) == 0)
-    {
-
-        memcpy(scan->frame, frame, size);
-
-        k_condvar_signal(&scan->cond);
+    if (k_mutex_lock(&scan->lock, K_NO_WAIT) == 0) {
+        LOG_DBG("zx_scan send frame %d", frame_no);
+        scan->frame_no = frame_no;
+        memcpy(scan->frame, frame_buf, frame_size);
         k_mutex_unlock(&scan->lock);
+        k_condvar_signal(&scan->cond);
         return 0;
-    }
-    else
-    {
-        LOG_ERR("zx_scan busy, skip frame %d", frame);
-        return -1;
+    } else {
+        LOG_WRN("zx_scan skip frame %d", frame_no);
+        return -EBUSY;
     }
 }
 
@@ -106,19 +103,22 @@ void ZX_ScanTask(zx_scan_t *const scan, zx_scan_param_t const *const param, void
         &(scan->frame), [](uint8_t** ptr) { delete[] (*ptr); }
     );
 
-    memset(scan->frame, 0, frame_size);
-
-    char * result_str = new char[1024];
-    uint32_t result_str_len = 0;
-    if(result_str == nullptr)
+    //memset(scan->frame, 0, frame_size);
+    scan->results_str = new char[ZX_SCAN_RESULTS_BUF_SIZE];
+    scan->results_str_len = 0;
+    if (scan->results_str == nullptr)
     {
-        LOG_ERR("frame buffer alloc fail");
+        LOG_ERR("results_str alloc fail");
         return;
     }
     /** release resources on exit */
-    std::unique_ptr<char*, std::function<void(char**)>> result_str_alloc_guard(
-        &(result_str), [](char** ptr) { delete[] (*ptr); }
+    std::unique_ptr<char*, std::function<void(char**)>> results_str_alloc_guard(
+        &(scan->results_str), [](char** ptr) { delete[] (*ptr); }
     );
+    scan->results_str_len = 0;
+    scan->preserve_old_result = true;
+    scan->results_str_len += snprintf((scan->results_str + scan->results_str_len),
+                    (ZX_SCAN_RESULTS_BUF_SIZE - scan->results_str_len),"No QR-Code detected yet.\n");
 
     ZXing::DecodeHints hints = ZXing::DecodeHints();
     hints.setTryHarder(true);
@@ -127,7 +127,7 @@ void ZX_ScanTask(zx_scan_t *const scan, zx_scan_param_t const *const param, void
     hints.setTryDownscale(true);
     //hints.setIsPure(true);
 	//hints.setBinarizer(Binarizer::FixedThreshold);
-    hints.setReturnErrors(true);
+    hints.setReturnErrors(false);
     hints.setFormats(ZXing::BarcodeFormat::MatrixCodes);
     hints.setTextMode(ZXing::TextMode::Plain);
 	hints.setEanAddOnSymbol(ZXing::EanAddOnSymbol::Read);
@@ -138,9 +138,8 @@ void ZX_ScanTask(zx_scan_t *const scan, zx_scan_param_t const *const param, void
 
     while (true)
     {
-        k_mutex_lock(&scan->lock, K_FOREVER);
-
         /** wait for frame is copied */
+        k_mutex_lock(&scan->lock, K_FOREVER);
         k_condvar_wait(&scan->cond, &scan->lock, K_FOREVER);
 
 #ifdef CONFIG_BARCODE_TIME_MEASUREMENT
@@ -148,7 +147,7 @@ void ZX_ScanTask(zx_scan_t *const scan, zx_scan_param_t const *const param, void
 #endif // CONFIG_BARCODE_TIME_MEASUREMENT
 
         LOG_DBG("scan new frame");
-        extern const uint8_t qr_code_array_rgb_24bit[];
+
         ZXing::ImageView qr_image(
             (const uint8_t*)scan->frame,
             param->width,
@@ -160,15 +159,59 @@ void ZX_ScanTask(zx_scan_t *const scan, zx_scan_param_t const *const param, void
 
         scan->results = ZXing::ReadBarcodes(qr_image, hints);
 
-        LOG_INF("scan end, found %d result", scan->results.size());
+        /** Format results to results_str */
+        if (scan->results.empty()) {
+            if(scan->preserve_old_result == false) {
+                scan->preserve_old_result = true;
+                scan->results_str_len += snprintf((scan->results_str + scan->results_str_len),
+                    (ZX_SCAN_RESULTS_BUF_SIZE - scan->results_str_len),"\nNo QR-Code found. Preserve last result.\n");
+            }
+        } else {
+            uint32_t result_no = 0;
+            scan->results_str_len = 0;
+            scan->preserve_old_result = false;
+            scan->results_str_len += snprintf((scan->results_str + scan->results_str_len),
+                    (ZX_SCAN_RESULTS_BUF_SIZE - scan->results_str_len), "Scan result from frame %8.8d :\n", scan->frame_no);
+            for (auto&& result : scan->results) {
+            //auto&& result = scan->results[0];
+                scan->results_str_len += snprintf((scan->results_str + scan->results_str_len),
+                    (ZX_SCAN_RESULTS_BUF_SIZE - scan->results_str_len), "\nQR-Code NO.%d :\n", result_no);
+                scan->results_str_len += ZX_ResultFormatString(
+                    scan->results_str + scan->results_str_len, ZX_SCAN_RESULTS_BUF_SIZE - scan->results_str_len, result);
+                if (++result_no >= ZX_SCAN_RESULTS_NUM_MAX) {
+                    break;
+                }
+            }
+            scan->results_str_len += snprintf((scan->results_str + scan->results_str_len),
+                (ZX_SCAN_RESULTS_BUF_SIZE - scan->results_str_len), "\nFound %d QR-Code(s)", scan->results.size());
+            if (scan->results.size() > ZX_SCAN_RESULTS_NUM_MAX) {
+                scan->results_str_len += snprintf((scan->results_str + scan->results_str_len),
+                    (ZX_SCAN_RESULTS_BUF_SIZE - scan->results_str_len), ", %d result(s) omitted.\n",
+                    scan->results.size() - ZX_SCAN_RESULTS_NUM_MAX);
+            } else {
+                scan->results_str_len += snprintf((scan->results_str + scan->results_str_len),
+                    (ZX_SCAN_RESULTS_BUF_SIZE - scan->results_str_len), ".\n", scan->results.size() - 2);
+            }
+        }
+        scan->results_str[scan->results_str_len] = '\0';
 
+//        for (auto it = scan->results.begin(); it < scan->results.end(); ++it)
+//        {
+//            if (static_cast<int>(it->error().type()) != 0)
+//            {
+//                it = scan->results.erase(it);
+//            }
+//        }
+//
+//        LOG_INF("scan end, found %d result", scan->results.size());
+//
 //        int result_no = 0;
 //
 //        for (auto&& result : scan->results)
 //        {
 //            ZX_ResultFormatString(result_str, 1024, result);
 //
-//            LOG_INF("result %d\r\n: %s", result_no, result_str);
+//            LOG_INF("result %d\n: %s", result_no, result_str);
 //            ++result_no;
 //        }
 
@@ -180,7 +223,5 @@ void ZX_ScanTask(zx_scan_t *const scan, zx_scan_param_t const *const param, void
         LOG_DBG("scan finish");
 
         k_mutex_unlock(&scan->lock);
-        //k_thread_suspend(scan->thread_id);
     }
-
 }

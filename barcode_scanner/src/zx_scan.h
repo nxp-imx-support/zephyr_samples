@@ -1,5 +1,5 @@
 /*
- * Copyright 2024, NXP
+ * Copyright 2024,2025 NXP
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -34,6 +34,9 @@
 #define ZX_SCAN_THREAD_NORMAL_PRIO (8)
 #define ZX_SCAN_THREAD_STACK_SIZE (0x10000)
 
+#define ZX_SCAN_RESULTS_BUF_SIZE (16384)
+#define ZX_SCAN_RESULTS_NUM_MAX (2)
+
 typedef struct _zx_scan_param
 {
     uint8_t prio_normal; /** specifies thread prio at normal run. */
@@ -46,15 +49,18 @@ typedef struct _zx_scan
     struct k_condvar cond;
     k_tid_t thread_id;
 
-    uint8_t * frame;
+    uint8_t *frame;
     uint32_t frame_no;
 
     ZXing::Results results;
+    char *results_str;
+    uint32_t results_str_len;
+    bool preserve_old_result;
 }zx_scan_t;
 
 size_t ZX_ResultFormatString(char * const result_str, size_t str_len, ZXing::Result const & result);
 
-int ZX_SendFrameIfIdle(zx_scan_t *const scan, uint8_t *frame, size_t size);
+int ZX_SendFrame(zx_scan_t *const scan, uint32_t frame_no, uint8_t *frame_buf, size_t frame_size);
 
 void ZX_ScanTask(zx_scan_t *const scan, zx_scan_param_t const *const param, void*);
 
