@@ -1,0 +1,41 @@
+From 0dfe5e445b133cb14b2e8bc1bafc7be700421456 Mon Sep 17 00:00:00 2001
+From: Winteri Wang <dongjie.wang@nxp.com>
+Date: Mon, 11 Aug 2025 14:30:09 +0800
+Subject: [PATCH 1/4] boards: nxp: solved display issue of 7inch DSI LCD(C)
+
+Display content might shift or show color issue. Enabling panel
+before attaching DSI can solve it.
+
+Signed-off-by: Winteri Wang <dongjie.wang@nxp.com>
+---
+ drivers/display/display_waveshare_dsi_lcd.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/display/display_waveshare_dsi_lcd.c b/drivers/display/display_waveshare_dsi_lcd.c
+index aabbda62f8b..00fcc752776 100644
+--- a/drivers/display/display_waveshare_dsi_lcd.c
++++ b/drivers/display/display_waveshare_dsi_lcd.c
+@@ -109,6 +109,9 @@ static int waveshare_dsi_lcd_init(const struct device *dev)
+ 	config->write_bus(dev, 0xc2, 0x01);
+ 	config->write_bus(dev, 0xac, 0x01);
+ 
++	waveshare_dsi_lcd_bl_update_status(dev, 0xff);
++	waveshare_dsi_lcd_enable(dev);
++
+ 	/* Attach to MIPI DSI host */
+ 	mdev.data_lanes = config->num_of_lanes;
+ 	mdev.pixfmt = data->pixel_format;
+@@ -121,9 +124,8 @@ static int waveshare_dsi_lcd_init(const struct device *dev)
+ 		return ret;
+ 	}
+ 
+-	waveshare_dsi_lcd_bl_update_status(dev, 0xff);
+ 
+-	waveshare_dsi_lcd_enable(dev);
++	LOG_INF("waveshare_dsi_lcd init succeeded");
+ 
+ 	return 0;
+ }
+-- 
+2.43.0
+

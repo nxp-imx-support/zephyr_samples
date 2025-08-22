@@ -1,0 +1,54 @@
+From a02d7e17e18cccbdc94fac2c46b6ed806e8038d5 Mon Sep 17 00:00:00 2001
+From: Winteri Wang <dongjie.wang@nxp.com>
+Date: Mon, 11 Aug 2025 15:23:55 +0800
+Subject: [PATCH 2/4] boards: nxp: set full refresh mode as default for 7inch
+ DSI LCD(C)
+
+1. Align LV_Z_BITS_PER_PIXEL with LV_COLOR_DEPTH
+2. Decrease dram size since 64MB is enough
+
+Signed-off-by: Winteri Wang <dongjie.wang@nxp.com>
+---
+ boards/shields/waveshare_dsi_lcd/Kconfig.defconfig     | 10 ++++++++--
+ .../boards/frdm_imx93_mimx9352_a55.overlay             |  2 +-
+ 2 files changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/boards/shields/waveshare_dsi_lcd/Kconfig.defconfig b/boards/shields/waveshare_dsi_lcd/Kconfig.defconfig
+index 4c2a842cf8e..93e7c78c722 100644
+--- a/boards/shields/waveshare_dsi_lcd/Kconfig.defconfig
++++ b/boards/shields/waveshare_dsi_lcd/Kconfig.defconfig
+@@ -11,10 +11,16 @@ if DISPLAY
+ if LVGL
+ 
+ config LV_Z_VDB_SIZE
+-	default 64
++	default 100
++
++config LV_Z_DOUBLE_VDB
++	default y
+ 
+ config LV_Z_BITS_PER_PIXEL
+-	default 24
++	default 32
++
++config LV_Z_FULL_REFRESH
++	default y
+ 
+ choice LV_COLOR_DEPTH
+ 	default LV_COLOR_DEPTH_32
+diff --git a/boards/shields/waveshare_dsi_lcd/boards/frdm_imx93_mimx9352_a55.overlay b/boards/shields/waveshare_dsi_lcd/boards/frdm_imx93_mimx9352_a55.overlay
+index b27f022b5be..e73377af6da 100644
+--- a/boards/shields/waveshare_dsi_lcd/boards/frdm_imx93_mimx9352_a55.overlay
++++ b/boards/shields/waveshare_dsi_lcd/boards/frdm_imx93_mimx9352_a55.overlay
+@@ -12,7 +12,7 @@
+ 	};
+ 
+ 	dram: memory@d0000000 {
+-		reg = <0xd0000000 DT_SIZE_M(512)>;
++		reg = <0xd0000000 DT_SIZE_M(64)>;
+ 	};
+ };
+ 
+-- 
+2.43.0
+

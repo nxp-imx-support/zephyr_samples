@@ -1,0 +1,31 @@
+From 2556b1e9cceb649ea430ea2ffcc1a4a97d4d9be0 Mon Sep 17 00:00:00 2001
+From: Chekhov Ma <chekhov.ma@nxp.com>
+Date: Wed, 20 Aug 2025 19:44:48 +0800
+Subject: [PATCH 3/4] drivers: video: isi: add alpha insersion and flip
+
+This is required by barcode scanner demo
+
+Signed-off-by: Chekhov Ma <chekhov.ma@nxp.com>
+---
+ drivers/video/video_mcux_isi.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/drivers/video/video_mcux_isi.c b/drivers/video/video_mcux_isi.c
+index 616681e0e68..7f303264f8d 100644
+--- a/drivers/video/video_mcux_isi.c
++++ b/drivers/video/video_mcux_isi.c
+@@ -454,6 +454,11 @@ static int isi_channel_config(const struct device *dev)
+ 		ISI_EnableColorSpaceConversion(base, false);
+ 	}
+ 
++	ISI_SetGlobalAlpha(base, 0xFF);
++	ISI_EnableGlobalAlpha(base, true);
++	/* flip */
++    ISI_SetFlipMode(base, kISI_FlipBoth);
++
+ 	return 0;
+ }
+ 
+-- 
+2.43.0
+
