@@ -44,7 +44,7 @@ These HAL samples help developers learn how to leverage the Zephyr HAL to build 
 
 - [FRDM-IMX93 board](https://www.nxp.com.cn/design/design-center/development-boards-and-designs/frdm-i-mx-93-development-board:FRDM-IMX93)
 - [RPI-CAM-MIPI camera module](https://www.nxp.com.cn/design/design-center/development-boards-and-designs/ias-camera-to-rpi-camera-adapter:RPI-CAM-MIPI)
-- Waveshare 7inch DSI LCD (C) display panel
+- [Waveshare 7inch DSI LCD (C) display panel](https://www.waveshare.net/shop/7inch-DSI-LCD-C.htm)
 - Personal Computer
 - TF Card Reader
 - TF Card
@@ -143,7 +143,7 @@ Copy the compiled `zephyr.bin` to the first FAT partition of the SD card and plu
 Use the following command to start `zephyr.bin` on Cortex-A55 Core0:
 
 ```shell
-$ fatload mmc 1:1 0xd0000000 zephyr.bin; dcache off; icache flush; go 0xd0000000
+u-boot=> fatload mmc 1:1 0xd0000000 zephyr.bin; dcache off; icache flush; go 0xd0000000
 ```
 
 ### 3.5 Step 5
@@ -162,29 +162,19 @@ $ west build -b frdm_imx93/mimx9352/a55 --shield="waveshare_7inch_dsi_lcd_c;nxp_
 
 Copy the `zephyr.bin` to the first FAT partition of the SD card and load with U-Boot.
 
-#### E-bike Digital Cluster
+#### E-bike Digital Cluster Basic
 
-The ebike digital cluster demo include 2 projects: [ebike_digital_cluster](./ebike_digital_cluster) and [ebike_data_source](./ebike_data_source/). It displays a demo instrument panel of an E-bike on an LVDS display, receives status data via CAN network and update the instrument panel.
+The ebike digital cluster basic demo runs on a single FRDM-IMX93 board. It displays a demo instrument panel of an E-bike on a panel with resolution 1024x600. The components on the panel are updated automatically.
 
-The ebike_data_source can run on either i.MX 93 11x11 EVK or i.MX 93 9x9 QSB. It serves as CAN data source, continuously sends status data of a simulated e-bike, and acknowledges latency measurement packets via FlexCAN. The ebike_digital_cluster can only run on i.MX 93 11x11 EVK. It receives information from FlexCAN and displays the data on LVDS display.
+Follow descriptions of chapter 3.1 in [Zephyr on A55 with FRDM-IMX93_91](https://community.nxp.com/pwmxy87654/attachments/pwmxy87654/imx-processors%40tkb/6170/1/Zephyr%20on%20A55%20with%20FRDM-IMX93_91.pdf) to connect the display panel.
 
-Prepare 1x i.MX 93 11x11 EVK board and 1x i.MX 93 9x9 QSB board. Connect CAN interface of the two boards. Connect LVDS display to i.MX 93 11x11 EVK board.
-
-Build ebike_data_source using this command:
+Build ebike digital cluster basic demo using this command:
 
 ```shell
-$ west build -b mimx93_qsb_a55 ../zephyr_samples/ebike_data_source
+$ west build -b frdm_imx93/mimx9352/a55 --shield="waveshare_7inch_dsi_lcd_c" ../zephyr_samples/ebike_digital_cluster_basic/
 ```
 
-Create bootable SD cand with `mkimage` and `dd`, then boot from it. To use another i.MX 93 11x11 EVK as ebike_data_source, replace `mimx93_qsb_a55` to `mimx93_evk_a55` .
-
-Build ebike_ebike_cluster using this command:
-
-```shell
-$ west build -b mimx93_evk_a55 ../zephyr_samples/ebike_ebike_cluster
-```
-
-Create bootable SD cand with `mkimage` and `dd`, then boot from it.
+Copy the `zephyr.bin` to the first FAT partition of the SD card and load with U-Boot.
 
 ## 4. Results<a name="step4"></a>
 
@@ -194,10 +184,11 @@ When the demo runs correctly, we will see the following interfaces.
 
 ![picture](images/barcode_scanner.jpg)
 
-#### E-bike Digital Cluster
+#### E-bike Digital Cluster Basic
 
 When the demo runs correctly, we will see the following interfaces.
-![picture](images/digital_cluster.png)
+
+![picture](images/digital_cluster_basic.jpg)
 
 ## 5. FAQs<a name="step5"></a>
 
