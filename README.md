@@ -10,9 +10,9 @@
 [![Category badge](https://img.shields.io/badge/Category-RTOS-yellowgreen)](https://github.com/search?q=org%3Anxp-appcodehub+rtos+in%3Areadme&type=Repositories)
 [![Peripheral badge](https://img.shields.io/badge/Peripheral-DISPLAY-yellow)](https://github.com/search?q=org%3Anxp-appcodehub+display+in%3Areadme&type=Repositories)
 
-These are highly illustrative Zephyr RTOS demo projects tailored specifically to run on the i.MX93 MPU. Specifically, the Digital Cluster demo and the Barcode Scanner demo demonstrate the exceptional capabilities of Zephyr RTOS in a hands-on manner. The Digital Cluster demo showcases the real-time performance of Zephyr RTOS, emphasizing its ability to handle multiple tasks simultaneously with minimal latency. This is crucial for applications requiring precision timing and quick response.
+These are highly illustrative Zephyr RTOS demo projects tailored specifically to run on the i.MX93 MPU. Specifically, the Digital Cluster demo and the Barcode Scanner demo demonstrate the exceptional capabilities of Zephyr RTOS in a hands-on manner.
 
-The Barcode Scanner demo, on the other hand, highlights the speed of Zephyr RTOS's boot process. Compared to RT-Linux, Zephyr RTOS boasts a significantly faster boot time, which is essential for scenarios where quick initialization is paramount.
+These demo highlights the speed of Zephyr RTOS's boot process. Compared to RT-Linux, Zephyr RTOS boasts a significantly faster boot time, which is essential for scenarios where quick initialization is paramount. They also showcases the real-time performance of Zephyr RTOS, emphasizing its ability to handle multiple tasks simultaneously with minimal latency. This is crucial for applications requiring precision timing and quick response.
 
 Furthermore, the lightweight nature of Zephyr RTOS is also evident in these demo projects. Its efficient memory management and minimal resource consumption ensure that even resource-constrained devices can leverage its capabilities effectively. This is a significant advantage compared to RT-Linux, which tends to be heavier and more resource-intensive.
 
@@ -26,15 +26,15 @@ Furthermore, the lightweight nature of Zephyr RTOS is also evident in these demo
 
 ## 1. Software<a name="step1"></a>
 
-- [Zephyr](https://github.com/nxp-upstream/zephyr/tree/gh-release/imx93_zephyr_poc)
+- [Zephyr](https://github.com/nxp-zephyr/zephyr/tree/FRDM-IMX93-v4.1)
 
 Zephyr is an operating system that includes a HAL component.
 
-- [Zephyr Hal](https://github.com/nxp-zephyr/hal_nxp/tree/gh-release/imx93_zephyr_poc)
+- [Zephyr Hal](https://github.com/nxp-zephyr/hal_nxp/tree/FRDM-IMX93-v4.1)
 
 The HAL provides an abstraction layer for interacting with hardware, allowing developers to write hardware-independent code.
 
-- [Zephyr Sample](https://github.com/nxp-imx-support/zephyr_samples)
+- [Zephyr Sample](https://github.com/nxp-imx-support/zephyr_samples/tree/gh-release/imx93_zephyr_poc_v4.1)
 
 The sample part indicates these are example implementations or demonstrations of how to use the Zephyr HAL.
 
@@ -42,8 +42,9 @@ These HAL samples help developers learn how to leverage the Zephyr HAL to build 
 
 ## 2. Hardware<a name="step2"></a>
 
-- [i.MX 93 EVK Board](https://www.nxp.com/products/processors-and-microcontrollers/arm-processors/i-mx-applications-processors/i-mx-9-processors/i-mx-93-applications-processor-family-arm-cortex-a55-ml-acceleration-power-efficient-mpu:i.MX93)
-- MT9M114
+- [FRDM-IMX93 board](https://www.nxp.com.cn/design/design-center/development-boards-and-designs/frdm-i-mx-93-development-board:FRDM-IMX93)
+- [RPI-CAM-MIPI camera module](https://www.nxp.com.cn/design/design-center/development-boards-and-designs/ias-camera-to-rpi-camera-adapter:RPI-CAM-MIPI)
+- Waveshare 7inch DSI LCD (C) display panel
 - Personal Computer
 - TF Card Reader
 - TF Card
@@ -59,12 +60,52 @@ To setup Zephyr project, refer to [Getting Started Guide - Zephyr Project Docume
 Note that when running `west init ~/zephyrproject` command, use the following command instead:
 
 ```shell
-$ west init -m https://github.com/nxp-upstream/zephyr --mr gh-release/imx93_zephyr_poc ~/zephyrproject
+$ west init -m https://github.com/nxp-zephyr/zephyr --mr FRDM-IMX93-v4.1 ~/zephyrproject
 ```
 
 Other steps are the same.
 
 ### 3.2 Step2
+
+#### Flash boot image
+
+Prepare a SD card and insert it into SD card slot of FRDM-IMX93 board.
+
+Find latest Linux release image from [FRDM i.MX 93 Development Board | NXP
+Semiconductors](https://www.nxp.com.cn/design/design-center/development-boards-and-designs/frdm-i-mx-93-development-board:FRDM-IMX93). Scroll down and find “i.MX FRDM 93 Demo Images”. Download and
+extract the zip archive, find imx-image: “imx-image-full-imx93frdm.rootfs.wic”.
+
+Switch SW1 on FRDM-IMX93 board to 1000 for serial downloader mode. Connect
+USB1_C(P2) connector to host PC with and USB cable. Provide power by connecting
+POWER(P1) to a USB-PD power supply.
+
+Flash the image to either eMMC or SD card.
+
+Run following command to flash the eMMC:
+
+```shell
+$ uuu -b emmc_all $path_to_imx_image
+```
+
+Wait for the process to finish. Switch SW1 on FRDM-IMX93 board to 0100 for eMMC
+card boot mode.
+
+Run following command to flash the SD card:
+
+```shell
+$ uuu -b sd_all $path_to_imx_image
+```
+
+Wait for the process to finish. Switch SW1 on FRDM-IMX93 board to 1100 for SD card
+boot mode.
+
+Disconnect USB1_C(P2) and connect DEBUG(P16) to the host PC. Open both serial
+console with 115200-8-1-0-0 settings.
+
+Power cycle the board by disconnecting and reconnecting the power supply. Boot
+log should appear on the first serial console.
+
+### 3.3 Step3
 
 #### Build Demo App
 
@@ -72,7 +113,14 @@ To build a demo app, first clone this repository under `~/zephyrproject` :
 
 ```shell
 $ cd ~/zephyrproject
-$ git clone -b gh-release/imx93_zephyr_poc --single-branch https://github.com/nxp-imx-support/zephyr_samples.git
+$ git clone -b gh-release/imx93_zephyr_poc_v4.1 --single-branch https://github.com/nxp-imx-support/zephyr_samples.git
+```
+
+Apply patches to zephyr:
+
+```shell
+$ cd ~/zephyrproject/zephyr
+$ git am ../zephyr_samples/patches/zephyr/*
 ```
 
 Then build with following commands:
@@ -82,47 +130,37 @@ $ cd ~/zephyrproject/zephyr
 $ west build -b ${BOARD} ${PATH_TO_DEMO}
 ```
 
-For example, to build `barcode_scanner` demo, use `west build -b mimx93_evk_a55 ../zephyr_samples/barcode_scanner` .
+For example, to build `samples/basic/blinky` sample, use `west build -b frdm_imx93/mimx9352/a55 samples/basic/blinky`.
 
 The result binary is `~/zephyrproject/zephyr/build/zephyr/zephyr.bin` .
 
-### 3.3 Step3
+### 3.4 Step4
 
-#### Run Zephyr Demo using SPL Boot
+#### Run Zephyr Demo using U-Boot
 
-Instead of using u-Boot to load Zephyr binary, SPL boot is used to minimize boot time. To run these demo, [mkimage](https://github.com/nxp-imx/imx-mkimage) tool must be used. To learn how to set up mkimage tool, please refer to chapter 4.5.13 of [i.MX Linux User's Guide](https://www.nxp.com/docs/en/user-guide/IMX_LINUX_USERS_GUIDE.pdf).
+Copy the compiled `zephyr.bin` to the first FAT partition of the SD card and plug the SD card into the board. Connect to LPUART1 with the setting of `115200-8-1-0-0` via on-board debug USB. Power it up and stop the u-boot execution at prompt.
 
-Assuming that mkimage tool is set up at `$MKIMAGE` dirctory, and Zephyr build directory is `$BUILD` (`~/zephyrproject/zephyr/build` if following above steps) , run following commands:
-
-```shell
-$ cp $BUILD/zephyr/zephyr.bin $MKIMAGE/iMX9/u-boot.bin
-$ cd $MKIMAGE
-$ make SOC=iMX9 REV=A1 flash_singleboot
-```
-
-The mkimage writes bootable binary to `$MKIMAGE/iMX9/flash.bin` . Write the binary to SD card with following command (replace `/dev/sdX` to actual device):
+Use the following command to start `zephyr.bin` on Cortex-A55 Core0:
 
 ```shell
-$ dd if=$MKIMAGE/iMX9/flash.bin of=/dev/sdX bs=1k seek=32 conv=fsync
+$ fatload mmc 1:1 0xd0000000 zephyr.bin; dcache off; icache flush; go 0xd0000000
 ```
 
-Insert SD card to the board, boot from SD card to run Zephyr demo. The Zephyr shell can be accessed via LPUART1 with setting of `115200-8-1-0-0` . If connect via on-board debug USB to UART bridge, select 3rd COM/TTY device on the host.
-
-### 3.4 Step 4
+### 3.5 Step 5
 
 #### Barcode Scanner
 
-The barcode_scanner demo runs on a single i.MX 93 11x11 EVK board. It shows preview of MT9M114 parallel camera, scan for QR-Code and shows the info on the LVDS display.
+The barcode_scanner demo runs on a single FRDM-IMX93 board. It shows preview of AR0144 MIPI-CSI camera with AP1302 ISP, scan for QR-Code and shows the info on the Waveshare 7inch DSI LCD (C) MIPI-DSI display.
 
-Connect LVDS diaplay to the EVK. Insert `X_RPI_CAM_INT` camera board onto the RPI 20 pin header of the EVK.
+Follow descriptions of chapter 3.1 in [Zephyr on A55 with FRDM-IMX93_91](https://community.nxp.com/pwmxy87654/attachments/pwmxy87654/imx-processors%40tkb/6170/1/Zephyr%20on%20A55%20with%20FRDM-IMX93_91.pdf) to connect the camera module and display panel.
 
 Build barcode_scanner using this command:
 
 ```shell
-$ west build -b mimx93_evk_a55 ../zephyr_samples/barcode_scanner
+$ west build -b frdm_imx93/mimx9352/a55 --shield="waveshare_7inch_dsi_lcd_c;nxp_rpi_cam_mipi_ap1302" ../zephyr_samples/barcode_scanner
 ```
 
-Create bootable SD cand with `mkimage` and `dd`, then boot from it.
+Copy the `zephyr.bin` to the first FAT partition of the SD card and load with U-Boot.
 
 #### E-bike Digital Cluster
 
@@ -153,7 +191,8 @@ Create bootable SD cand with `mkimage` and `dd`, then boot from it.
 #### Barcode Scanner
 
 When the demo runs correctly, we will see the following interfaces.
-![picture](images/barcode_scanner.png)
+
+![picture](images/barcode_scanner.jpg)
 
 #### E-bike Digital Cluster
 
@@ -177,7 +216,8 @@ Questions regarding the content/correctness of this example can be entered as Is
 
 | Version | Description / Update                    | Date                       |
 |:-------:| --------------------------------------- | --------------------------:|
-| 1.0     | Initial release                         | May 30<sup>th</sup> 2024 |
+| 1.0     | Initial release                         | May 30<sup>th</sup> 2024   |
+| 2.0     | Update to zephyr v4.1                   | Sep 16<sup>th</sup> 2025   |
 
 ## Licensing
 
